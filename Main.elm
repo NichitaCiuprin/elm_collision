@@ -18,7 +18,10 @@ type alias Circle =
   , isSelected : Bool
   , id : Int
   , isCollided : Bool
+  , movementDirection : Float
+  , movementSpeed : Float
   }
+
 
 type Msg 
   = Tick Time
@@ -38,10 +41,10 @@ main =
 
 initModel : Model  
 initModel = 
-  [ Circle 200 200 50 False 1 False
-  , Circle 400 200 50 False 2 False
-  , Circle 600 200 50 False 3 False
-  , Circle 800 200 50 False 4 False
+  [ Circle 200 200 50 False 1 False 45 1
+  , Circle 400 200 50 False 2 False 45 1 
+  , Circle 600 200 50 False 3 False 45 1
+  , Circle 800 200 50 False 4 False 45 1
   ]
 
 view : Model -> Html.Html Msg 
@@ -94,7 +97,9 @@ mooveCicles model =
   let
     map : Circle -> Circle
     map item =
-        {item | x = item.x + 1} 
+        { item | x = item.x + (item.movementDirection |> degrees |> cos) * item.movementSpeed
+               , y = item.y - (item.movementDirection |> degrees |> sin) * item.movementSpeed
+        } 
   in
     List.map map model
 
@@ -192,6 +197,7 @@ circleToText circle =
             , p [s] [text <| toString <| circle.isCollided ]
             , p [s] [text <| toString <| circle.isSelected ]
             , p [s] [text <| toString <| circle.radius ]
+            , p [s] [text <| toString <| (circle.movementDirection |> degrees |> cos) ]
             , p [s] [text <| "-------" ]
             ]
 

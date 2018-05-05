@@ -109,10 +109,28 @@ var _user$project$Main$circleToText = function (circle) {
 										},
 										{
 											ctor: '::',
-											_0: _elm_lang$html$Html$text('-------'),
+											_0: _elm_lang$html$Html$text(
+												_elm_lang$core$Basics$toString(
+													_elm_lang$core$Basics$cos(
+														_elm_lang$core$Basics$degrees(circle.movementDirection)))),
 											_1: {ctor: '[]'}
 										}),
-									_1: {ctor: '[]'}
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$p,
+											{
+												ctor: '::',
+												_0: s,
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('-------'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {ctor: '[]'}
+									}
 								}
 							}
 						}
@@ -210,7 +228,12 @@ var _user$project$Main$mooveCicles = function (model) {
 	var map = function (item) {
 		return _elm_lang$core$Native_Utils.update(
 			item,
-			{x: item.x + 1});
+			{
+				x: item.x + (_elm_lang$core$Basics$cos(
+					_elm_lang$core$Basics$degrees(item.movementDirection)) * item.movementSpeed),
+				y: item.y - (_elm_lang$core$Basics$sin(
+					_elm_lang$core$Basics$degrees(item.movementDirection)) * item.movementSpeed)
+			});
 	};
 	return A2(_elm_lang$core$List$map, map, model);
 };
@@ -248,22 +271,22 @@ var _user$project$Main$update = F2(
 		}
 	});
 var _user$project$Main$frameUpdated = _elm_lang$core$Native_Platform.incomingPort('frameUpdated', _elm_lang$core$Json_Decode$string);
-var _user$project$Main$Circle = F6(
-	function (a, b, c, d, e, f) {
-		return {x: a, y: b, radius: c, isSelected: d, id: e, isCollided: f};
+var _user$project$Main$Circle = F8(
+	function (a, b, c, d, e, f, g, h) {
+		return {x: a, y: b, radius: c, isSelected: d, id: e, isCollided: f, movementDirection: g, movementSpeed: h};
 	});
 var _user$project$Main$initModel = {
 	ctor: '::',
-	_0: A6(_user$project$Main$Circle, 200, 200, 50, false, 1, false),
+	_0: A8(_user$project$Main$Circle, 200, 200, 50, false, 1, false, 45, 1),
 	_1: {
 		ctor: '::',
-		_0: A6(_user$project$Main$Circle, 400, 200, 50, false, 2, false),
+		_0: A8(_user$project$Main$Circle, 400, 200, 50, false, 2, false, 45, 1),
 		_1: {
 			ctor: '::',
-			_0: A6(_user$project$Main$Circle, 600, 200, 50, false, 3, false),
+			_0: A8(_user$project$Main$Circle, 600, 200, 50, false, 3, false, 45, 1),
 			_1: {
 				ctor: '::',
-				_0: A6(_user$project$Main$Circle, 800, 200, 50, false, 4, false),
+				_0: A8(_user$project$Main$Circle, 800, 200, 50, false, 4, false, 45, 1),
 				_1: {ctor: '[]'}
 			}
 		}
