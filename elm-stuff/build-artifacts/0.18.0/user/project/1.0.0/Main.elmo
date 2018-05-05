@@ -125,7 +125,13 @@ var _user$project$Main$isTwoCirclesCollided = F2(
 	function (c1, c2) {
 		var radiusSum = c1.radius + c2.radius;
 		var distance = _elm_lang$core$Basics$sqrt(
-			Math.pow(c1.x - c2.x, 2) + Math.pow(c1.y - c2.y, 2));
+			A2(
+				F2(
+					function (x, y) {
+						return x + y;
+					}),
+				Math.pow(c1.x - c2.x, 2),
+				Math.pow(c1.y - c2.y, 2)));
 		return _elm_lang$core$Native_Utils.cmp(radiusSum, distance) > -1;
 	});
 var _user$project$Main$isCircleCollided = F2(
@@ -200,16 +206,20 @@ var _user$project$Main$markCollidedCircles = function (model) {
 	};
 	return A2(_elm_lang$core$List$map, map, model);
 };
+var _user$project$Main$mooveCicles = function (model) {
+	var map = function (item) {
+		return _elm_lang$core$Native_Utils.update(
+			item,
+			{x: item.x + 1});
+	};
+	return A2(_elm_lang$core$List$map, map, model);
+};
 var _user$project$Main$update = F2(
 	function (msg, model) {
 		var _p3 = msg;
 		switch (_p3.ctor) {
 			case 'Tick':
-				return {
-					ctor: '_Tuple2',
-					_0: _user$project$Main$markCollidedCircles(model),
-					_1: _elm_lang$core$Platform_Cmd$none
-				};
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 			case 'SelectCircle':
 				return {
 					ctor: '_Tuple2',
@@ -222,14 +232,22 @@ var _user$project$Main$update = F2(
 					_0: _user$project$Main$diselectCircles(model),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
-			default:
+			case 'SetSelectedCirclesToMousePosition':
 				return {
 					ctor: '_Tuple2',
 					_0: A2(_user$project$Main$setSelectedCirclesToMousePosition, model, _p3._0),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
+			default:
+				return {
+					ctor: '_Tuple2',
+					_0: _user$project$Main$mooveCicles(
+						_user$project$Main$markCollidedCircles(model)),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
 		}
 	});
+var _user$project$Main$frameUpdated = _elm_lang$core$Native_Platform.incomingPort('frameUpdated', _elm_lang$core$Json_Decode$string);
 var _user$project$Main$Circle = F6(
 	function (a, b, c, d, e, f) {
 		return {x: a, y: b, radius: c, isSelected: d, id: e, isCollided: f};
@@ -250,6 +268,9 @@ var _user$project$Main$initModel = {
 			}
 		}
 	}
+};
+var _user$project$Main$UpdateFrame = function (a) {
+	return {ctor: 'UpdateFrame', _0: a};
 };
 var _user$project$Main$SetSelectedCirclesToMousePosition = function (a) {
 	return {ctor: 'SetSelectedCirclesToMousePosition', _0: a};
@@ -362,7 +383,11 @@ var _user$project$Main$subscriptions = function (model) {
 				_1: {
 					ctor: '::',
 					_0: _elm_lang$mouse$Mouse$ups(_user$project$Main$DiselectCircles),
-					_1: {ctor: '[]'}
+					_1: {
+						ctor: '::',
+						_0: _user$project$Main$frameUpdated(_user$project$Main$UpdateFrame),
+						_1: {ctor: '[]'}
+					}
 				}
 			}
 		});

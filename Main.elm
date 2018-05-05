@@ -1,10 +1,12 @@
-module Main exposing (..) 
+port module Main exposing (..) 
 
 import Html exposing (text, div, span, p)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onMouseDown)
 import Time exposing (Time, second)
 import Mouse exposing (moves)
+
+port frameUpdated : (String -> msg) -> Sub msg 
 
 type alias Model =
   List Circle
@@ -23,6 +25,7 @@ type Msg
   | SelectCircle Circle
   | DiselectCircles Mouse.Position
   | SetSelectedCirclesToMousePosition Mouse.Position
+  | UpdateFrame String
 
 main : Program Never Model Msg
 main =
@@ -53,7 +56,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of 
     Tick _ -> 
-      ( markCollidedCircles model , Cmd.none )
+      (model, Cmd.none)
 
     SelectCircle circle ->
       ( selectCircle model circle , Cmd.none )
@@ -64,12 +67,16 @@ update msg model =
     SetSelectedCirclesToMousePosition mousePosition ->
       ( setSelectedCirclesToMousePosition model mousePosition , Cmd.none )
 
+    UpdateFrame _ ->
+      ( model |> markCollidedCircles |> mooveCicles , Cmd.none )
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
       [ Time.every Time.millisecond Tick 
       , Mouse.moves SetSelectedCirclesToMousePosition
       , Mouse.ups DiselectCircles
+      , frameUpdated UpdateFrame
       ]
 
 --////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,47 +89,56 @@ subscriptions model =
 --////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 --////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+mooveCicles : Model -> Model
+mooveCicles model = 
+  let
+    map : Circle -> Circle
+    map item =
+        {item | x = item.x + 1} 
+  in
+    List.map map model
+
 markCollidedCircles : Model -> Model
 markCollidedCircles model = 
-    let
-        map : Circle -> Circle
-        map x =
-            {x | isCollided = isCircleCollided x model} 
-    in
-        List.map map model
+  let
+      map : Circle -> Circle
+      map x =
+          {x | isCollided = isCircleCollided x model} 
+  in
+      List.map map model
 
 selectCircle : Model -> Circle -> Model
 selectCircle model circle =
-    let
-        map : Circle -> Circle
-        map x =
-            if x.id == circle.id then
-                { x | isSelected = True }
-            else
-                x
-    in
-        List.map map model
+  let
+      map : Circle -> Circle
+      map x =
+          if x.id == circle.id then
+              { x | isSelected = True }
+          else
+              x
+  in
+      List.map map model
 
 diselectCircles : Model -> Model
 diselectCircles model =
-    let
-        map : Circle -> Circle
-        map x =
-            { x | isSelected = False }
-    in
-        List.map map model 
+  let
+      map : Circle -> Circle
+      map x =
+          { x | isSelected = False }
+  in
+      List.map map model 
 
 setSelectedCirclesToMousePosition : Model -> Mouse.Position -> Model
 setSelectedCirclesToMousePosition model mousePosition = 
-    let
-        map : Circle -> Circle
-        map x =
-        if x.isSelected then
-            { x | x = toFloat mousePosition.x , y = toFloat mousePosition.y }
-        else
-            x
-    in
-        List.map map model
+  let
+      map : Circle -> Circle
+      map x =
+      if x.isSelected then
+          { x | x = toFloat mousePosition.x , y = toFloat mousePosition.y }
+      else
+          x
+  in
+      List.map map model
 
 circleToSpan : Circle -> Html.Html Msg
 circleToSpan circle =
@@ -158,7 +174,7 @@ isCircleCollided circle model =
 isTwoCirclesCollided : Circle -> Circle -> Bool
 isTwoCirclesCollided c1 c2 = 
   let
-    distance = sqrt <| (((c1.x - c2.x) ^ 2) + ((c1.y - c2.y) ^ 2))
+    distance = sqrt <| (+) ((c1.x - c2.x) ^ 2) ((c1.y - c2.y) ^ 2)
     radiusSum = c1.radius + c2.radius
   in
     radiusSum >= distance 
