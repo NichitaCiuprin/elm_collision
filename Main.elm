@@ -86,7 +86,12 @@ update msg model =
       ( setSelectedCirclesToMousePosition model mousePosition , Cmd.none )
 
     UpdateFrame _ ->
-      ( model |> markCollidedCircles |> moveCicles |> changeCirclesDirection, Cmd.none )
+      ( model 
+        |> markCollidedCircles 
+        --|> moveCircles 
+        |> deflectCircles
+      , Cmd.none 
+      )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -134,14 +139,17 @@ circlesToHTML listOfCircles =
 
 boundaryToHTML : Boundary -> Html.Html Msg
 boundaryToHTML boundary = 
+  let 
+    borderThickness = 5
+  in
   div 
     [ style 
-      [ ("border","10px solid red") 
+      [ ("border", toString borderThickness ++ "px solid red") 
       , ("position","absolute") 
-      , ("height", toString (boundary.height) ++ "px") 
-      , ("width", toString (boundary.wight) ++ "px")
-      , ("left", toString (boundary.x) ++ "px")
-      , ("top", toString (boundary.y) ++ "px")
+      , ("height", toString boundary.height  ++ "px") 
+      , ("width",  toString boundary.wight   ++ "px")
+      , ("left",   toString (boundary.x - borderThickness) ++ "px")
+      , ("top",    toString (boundary.y - borderThickness) ++ "px")
       ]
     ] 
     []
@@ -150,16 +158,16 @@ print : String -> Html.Html Msg
 print log =
   p [] [ text log ]
 
-changeCirclesDirection : Model -> Model
-changeCirclesDirection model =
+deflectCircles : Model -> Model
+deflectCircles model =
   let
-    func4 = func3 model.boundary
+    map = deflectCircle model.boundary
   in
-    { model | circlesList = List.map func4 model.circlesList } 
+    { model | circlesList = List.map map model.circlesList } 
 
 
-func3 : Boundary -> Circle -> Circle
-func3 boundary circle =
+deflectCircle : Boundary -> Circle -> Circle
+deflectCircle boundary circle =
     if      isCircle_leftOf_boundary  circle boundary then { circle | movementDirection = reflectDegree circle.movementDirection True }
     else if isCircle_rightOf_boundary circle boundary then { circle | movementDirection = reflectDegree circle.movementDirection True }
     else if isCircle_above_boundary   circle boundary then { circle | movementDirection = reflectDegree circle.movementDirection False }
@@ -181,9 +189,9 @@ reflectDegree degree isVertically =
 
 isCircle_below_boundary : Circle -> Boundary -> Bool
 isCircle_below_boundary circle boundary = 
-  if circle.x >= boundary.x &&
-     circle.x <= boundary.x + boundary.wight &&
-     circle.y > boundary.y + boundary.height then
+  if (circle.x - circle.radius) >= boundary.x &&
+     (circle.x + circle.radius) <= boundary.x + boundary.wight &&
+     (circle.y + circle.radius) > boundary.y + boundary.height then
     True
   else
     False
@@ -221,8 +229,8 @@ justToCircle justCircle =
     Just justCircle -> justCircle
     Nothing -> Circle 0 0 0 False 0 False 0 0 
 
-moveCicles : Model -> Model
-moveCicles model = 
+moveCircles : Model -> Model
+moveCircles model = 
   let
     map : Circle -> Circle
     map item =  

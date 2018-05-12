@@ -9147,7 +9147,7 @@ var _user$project$Main$markCollidedCircles = function (model) {
 			circlesList: A2(_elm_lang$core$List$map, map, model.circlesList)
 		});
 };
-var _user$project$Main$moveCicles = function (model) {
+var _user$project$Main$moveCircles = function (model) {
 	var map = function (item) {
 		return _elm_lang$core$Native_Utils.update(
 			item,
@@ -9168,16 +9168,6 @@ var _user$project$Main$isCircle_rightOf_boundary = F2(
 	function (circle, boundary) {
 		return ((_elm_lang$core$Native_Utils.cmp(circle.y, boundary.y) > -1) && ((_elm_lang$core$Native_Utils.cmp(circle.y, boundary.y + boundary.height) < 1) && (_elm_lang$core$Native_Utils.cmp(circle.x, boundary.x + boundary.wight) > 0))) ? true : false;
 	});
-var _user$project$Main$isCircle_leftOf_boundary2 = F2(
-	function (circle, boundary) {
-		var _p3 = circle;
-		if (_p3.ctor === 'Just') {
-			var _p4 = _p3._0;
-			return ((_elm_lang$core$Native_Utils.cmp(_p4.y, boundary.y) > -1) && ((_elm_lang$core$Native_Utils.cmp(_p4.y, boundary.y + boundary.height) < 1) && (_elm_lang$core$Native_Utils.cmp(_p4.x, boundary.x) < 0))) ? true : false;
-		} else {
-			return false;
-		}
-	});
 var _user$project$Main$isCircle_leftOf_boundary = F2(
 	function (circle, boundary) {
 		return ((_elm_lang$core$Native_Utils.cmp(circle.y, boundary.y) > -1) && ((_elm_lang$core$Native_Utils.cmp(circle.y, boundary.y + boundary.height) < 1) && (_elm_lang$core$Native_Utils.cmp(circle.x, boundary.x) < 0))) ? true : false;
@@ -9188,7 +9178,7 @@ var _user$project$Main$isCircle_above_boundary = F2(
 	});
 var _user$project$Main$isCircle_below_boundary = F2(
 	function (circle, boundary) {
-		return ((_elm_lang$core$Native_Utils.cmp(circle.x, boundary.x) > -1) && ((_elm_lang$core$Native_Utils.cmp(circle.x, boundary.x + boundary.wight) < 1) && (_elm_lang$core$Native_Utils.cmp(circle.y, boundary.y + boundary.height) > 0))) ? true : false;
+		return ((_elm_lang$core$Native_Utils.cmp(circle.x - circle.radius, boundary.x) > -1) && ((_elm_lang$core$Native_Utils.cmp(circle.x + circle.radius, boundary.x + boundary.wight) < 1) && (_elm_lang$core$Native_Utils.cmp(circle.y + circle.radius, boundary.y + boundary.height) > 0))) ? true : false;
 	});
 var _user$project$Main$reflectDegree = F2(
 	function (degree, isVertically) {
@@ -9202,7 +9192,7 @@ var _user$project$Main$reflectDegree = F2(
 		var result = normalised + piToAdd;
 		return _elm_lang$core$Native_Utils.eq(result, 360) ? 0 : result;
 	});
-var _user$project$Main$func3 = F2(
+var _user$project$Main$deflectCircle = F2(
 	function (boundary, circle) {
 		return A2(_user$project$Main$isCircle_leftOf_boundary, circle, boundary) ? _elm_lang$core$Native_Utils.update(
 			circle,
@@ -9222,12 +9212,12 @@ var _user$project$Main$func3 = F2(
 				movementDirection: A2(_user$project$Main$reflectDegree, circle.movementDirection, false)
 			}) : circle)));
 	});
-var _user$project$Main$changeCirclesDirection = function (model) {
-	var func4 = _user$project$Main$func3(model.boundary);
+var _user$project$Main$deflectCircles = function (model) {
+	var map = _user$project$Main$deflectCircle(model.boundary);
 	return _elm_lang$core$Native_Utils.update(
 		model,
 		{
-			circlesList: A2(_elm_lang$core$List$map, func4, model.circlesList)
+			circlesList: A2(_elm_lang$core$List$map, map, model.circlesList)
 		});
 };
 var _user$project$Main$print = function (log) {
@@ -9241,6 +9231,7 @@ var _user$project$Main$print = function (log) {
 		});
 };
 var _user$project$Main$boundaryToHTML = function (boundary) {
+	var borderThickness = 5;
 	return A2(
 		_elm_lang$html$Html$div,
 		{
@@ -9248,7 +9239,14 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 			_0: _elm_lang$html$Html_Attributes$style(
 				{
 					ctor: '::',
-					_0: {ctor: '_Tuple2', _0: 'border', _1: '10px solid red'},
+					_0: {
+						ctor: '_Tuple2',
+						_0: 'border',
+						_1: A2(
+							_elm_lang$core$Basics_ops['++'],
+							_elm_lang$core$Basics$toString(borderThickness),
+							'px solid red')
+					},
 					_1: {
 						ctor: '::',
 						_0: {ctor: '_Tuple2', _0: 'position', _1: 'absolute'},
@@ -9279,7 +9277,7 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 										_0: 'left',
 										_1: A2(
 											_elm_lang$core$Basics_ops['++'],
-											_elm_lang$core$Basics$toString(boundary.x),
+											_elm_lang$core$Basics$toString(boundary.x - borderThickness),
 											'px')
 									},
 									_1: {
@@ -9289,7 +9287,7 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 											_0: 'top',
 											_1: A2(
 												_elm_lang$core$Basics_ops['++'],
-												_elm_lang$core$Basics$toString(boundary.y),
+												_elm_lang$core$Basics$toString(boundary.y - borderThickness),
 												'px')
 										},
 										_1: {ctor: '[]'}
@@ -9305,14 +9303,14 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 };
 var _user$project$Main$update = F2(
 	function (msg, model) {
-		var _p5 = msg;
-		switch (_p5.ctor) {
+		var _p3 = msg;
+		switch (_p3.ctor) {
 			case 'Tick':
 				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 			case 'SelectCircle':
 				return {
 					ctor: '_Tuple2',
-					_0: A2(_user$project$Main$selectCircle, model, _p5._0),
+					_0: A2(_user$project$Main$selectCircle, model, _p3._0),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'DiselectCircles':
@@ -9324,15 +9322,14 @@ var _user$project$Main$update = F2(
 			case 'SetSelectedCirclesToMousePosition':
 				return {
 					ctor: '_Tuple2',
-					_0: A2(_user$project$Main$setSelectedCirclesToMousePosition, model, _p5._0),
+					_0: A2(_user$project$Main$setSelectedCirclesToMousePosition, model, _p3._0),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			default:
 				return {
 					ctor: '_Tuple2',
-					_0: _user$project$Main$changeCirclesDirection(
-						_user$project$Main$moveCicles(
-							_user$project$Main$markCollidedCircles(model))),
+					_0: _user$project$Main$deflectCircles(
+						_user$project$Main$markCollidedCircles(model)),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 		}
@@ -9347,9 +9344,9 @@ var _user$project$Main$Circle = F8(
 		return {x: a, y: b, radius: c, isSelected: d, id: e, isCollided: f, movementDirection: g, movementSpeed: h};
 	});
 var _user$project$Main$justToCircle = function (justCircle) {
-	var _p6 = justCircle;
-	if (_p6.ctor === 'Just') {
-		return _p6._0;
+	var _p4 = justCircle;
+	if (_p4.ctor === 'Just') {
+		return _p4._0;
 	} else {
 		return A8(_user$project$Main$Circle, 0, 0, 0, false, 0, false, 0, 0);
 	}
@@ -9361,14 +9358,14 @@ var _user$project$Main$Boundary = F4(
 var _user$project$Main$initModel = {
 	circlesList: {
 		ctor: '::',
-		_0: A8(_user$project$Main$Circle, 500, 200, 50, false, 1, false, 45, 10),
+		_0: A8(_user$project$Main$Circle, 500, 500, 10, false, 1, false, 45, 3),
 		_1: {
 			ctor: '::',
-			_0: A8(_user$project$Main$Circle, 700, 200, 50, false, 2, false, 60, 10),
+			_0: A8(_user$project$Main$Circle, 700, 200, 20, false, 2, false, 60, 3),
 			_1: {ctor: '[]'}
 		}
 	},
-	boundary: A4(_user$project$Main$Boundary, 700, 100, 700, 1000)
+	boundary: A4(_user$project$Main$Boundary, 0, 0, 500, 500)
 };
 var _user$project$Main$UpdateFrame = function (a) {
 	return {ctor: 'UpdateFrame', _0: a};
