@@ -50,8 +50,8 @@ main =
 initModel : Model  
 initModel = 
   { circlesList = 
-    [ Circle 500 200 50 False 1 False 45 10
-    , Circle 700 200 50 False 2 False 60 10 
+    [ Circle 800 200 50 False 1 False 45 20
+    , Circle 900 200 50 False 2 False 60 20 
     --, Circle 900 200 50 False 3 False 45 1
     --, Circle 1100 200 50 False 4 False 45 1
     ]
@@ -88,7 +88,7 @@ update msg model =
     UpdateFrame _ ->
       ( model 
         |> markCollidedCircles 
-        --|> moveCircles 
+        |> moveCircles 
         |> deflectCircles
       , Cmd.none 
       )
@@ -198,27 +198,27 @@ isCircle_below_boundary circle boundary =
 
 isCircle_above_boundary : Circle -> Boundary -> Bool
 isCircle_above_boundary circle boundary = 
-  if circle.x >= boundary.x &&
-     circle.x <= boundary.x + boundary.wight &&
-     circle.y < boundary.y then
+  if (circle.x - circle.radius) >= boundary.x &&
+     (circle.x + circle.radius) <= boundary.x + boundary.wight &&
+     (circle.y - circle.radius) < boundary.y then
     True
   else
     False
 
 isCircle_leftOf_boundary : Circle -> Boundary -> Bool
 isCircle_leftOf_boundary circle boundary = 
-  if circle.y >= boundary.y &&
-     circle.y <= boundary.y + boundary.height &&
-     circle.x < boundary.x then
+  if (circle.y - circle.radius) >= boundary.y &&
+     (circle.y + circle.radius) <= boundary.y + boundary.height &&
+     (circle.x - circle.radius) < boundary.x then
     True
   else
     False
 
 isCircle_rightOf_boundary : Circle -> Boundary -> Bool
 isCircle_rightOf_boundary circle boundary = 
-  if circle.y >= boundary.y &&
-     circle.y <= boundary.y + boundary.height &&
-     circle.x > boundary.x + boundary.wight then
+  if (circle.y - circle.radius) >= boundary.y &&
+     (circle.y + circle.radius) <= boundary.y + boundary.height &&
+     (circle.x + circle.radius) > boundary.x + boundary.wight then
     True
   else
     False

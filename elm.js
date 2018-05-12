@@ -9166,15 +9166,15 @@ var _user$project$Main$moveCircles = function (model) {
 };
 var _user$project$Main$isCircle_rightOf_boundary = F2(
 	function (circle, boundary) {
-		return ((_elm_lang$core$Native_Utils.cmp(circle.y, boundary.y) > -1) && ((_elm_lang$core$Native_Utils.cmp(circle.y, boundary.y + boundary.height) < 1) && (_elm_lang$core$Native_Utils.cmp(circle.x, boundary.x + boundary.wight) > 0))) ? true : false;
+		return ((_elm_lang$core$Native_Utils.cmp(circle.y - circle.radius, boundary.y) > -1) && ((_elm_lang$core$Native_Utils.cmp(circle.y + circle.radius, boundary.y + boundary.height) < 1) && (_elm_lang$core$Native_Utils.cmp(circle.x + circle.radius, boundary.x + boundary.wight) > 0))) ? true : false;
 	});
 var _user$project$Main$isCircle_leftOf_boundary = F2(
 	function (circle, boundary) {
-		return ((_elm_lang$core$Native_Utils.cmp(circle.y, boundary.y) > -1) && ((_elm_lang$core$Native_Utils.cmp(circle.y, boundary.y + boundary.height) < 1) && (_elm_lang$core$Native_Utils.cmp(circle.x, boundary.x) < 0))) ? true : false;
+		return ((_elm_lang$core$Native_Utils.cmp(circle.y - circle.radius, boundary.y) > -1) && ((_elm_lang$core$Native_Utils.cmp(circle.y + circle.radius, boundary.y + boundary.height) < 1) && (_elm_lang$core$Native_Utils.cmp(circle.x - circle.radius, boundary.x) < 0))) ? true : false;
 	});
 var _user$project$Main$isCircle_above_boundary = F2(
 	function (circle, boundary) {
-		return ((_elm_lang$core$Native_Utils.cmp(circle.x, boundary.x) > -1) && ((_elm_lang$core$Native_Utils.cmp(circle.x, boundary.x + boundary.wight) < 1) && (_elm_lang$core$Native_Utils.cmp(circle.y, boundary.y) < 0))) ? true : false;
+		return ((_elm_lang$core$Native_Utils.cmp(circle.x - circle.radius, boundary.x) > -1) && ((_elm_lang$core$Native_Utils.cmp(circle.x + circle.radius, boundary.x + boundary.wight) < 1) && (_elm_lang$core$Native_Utils.cmp(circle.y - circle.radius, boundary.y) < 0))) ? true : false;
 	});
 var _user$project$Main$isCircle_below_boundary = F2(
 	function (circle, boundary) {
@@ -9329,7 +9329,8 @@ var _user$project$Main$update = F2(
 				return {
 					ctor: '_Tuple2',
 					_0: _user$project$Main$deflectCircles(
-						_user$project$Main$markCollidedCircles(model)),
+						_user$project$Main$moveCircles(
+							_user$project$Main$markCollidedCircles(model))),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 		}
@@ -9358,14 +9359,14 @@ var _user$project$Main$Boundary = F4(
 var _user$project$Main$initModel = {
 	circlesList: {
 		ctor: '::',
-		_0: A8(_user$project$Main$Circle, 500, 500, 10, false, 1, false, 45, 3),
+		_0: A8(_user$project$Main$Circle, 800, 200, 50, false, 1, false, 45, 20),
 		_1: {
 			ctor: '::',
-			_0: A8(_user$project$Main$Circle, 700, 200, 20, false, 2, false, 60, 3),
+			_0: A8(_user$project$Main$Circle, 900, 200, 50, false, 2, false, 60, 20),
 			_1: {ctor: '[]'}
 		}
 	},
-	boundary: A4(_user$project$Main$Boundary, 0, 0, 500, 500)
+	boundary: A4(_user$project$Main$Boundary, 700, 100, 700, 1000)
 };
 var _user$project$Main$UpdateFrame = function (a) {
 	return {ctor: 'UpdateFrame', _0: a};
