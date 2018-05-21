@@ -68,6 +68,7 @@ type alias Boundary =
   , y : Float
   , height : Float
   , wight : Float
+  , borderThickness : Float
   }
 
 type Msg 
@@ -93,14 +94,11 @@ initModel =
     , Circle 2 1000 250 50 False 0 -135 20 
     , Circle 3 1400 400 50 False 0 45 20 
     ]
-  , boundary = Boundary 700 100 700 1000
+  , boundary = Boundary 700 100 700 1000 5
   }
 
 view : Model -> Html.Html Msg 
 view model =
-  let 
-    circle = justToCircle <| List.head model.circlesList
-  in
     div 
       [] 
       [ print <| toString <| model.circlesList
@@ -170,17 +168,18 @@ circlesToHTML listOfCircles =
 
 boundaryToHTML : Boundary -> Html.Html Msg
 boundaryToHTML boundary = 
-  let 
-    borderThickness = 5
+  let
+    corectedPosition_left  = (boundary.x - boundary.borderThickness)
+    corectedPosition_right = (boundary.y - boundary.borderThickness)
   in
   div 
     [ style 
-      [ ("border", toString borderThickness ++ "px solid red") 
+      [ ("border", toString boundary.borderThickness ++ "px solid red") 
       , ("position","absolute") 
-      , ("height", toString boundary.height  ++ "px") 
-      , ("width",  toString boundary.wight   ++ "px")
-      , ("left",   toString (boundary.x - borderThickness) ++ "px")
-      , ("top",    toString (boundary.y - borderThickness) ++ "px")
+      , ("height", toString boundary.height        ++ "px") 
+      , ("width",  toString boundary.wight         ++ "px")
+      , ("left",   toString corectedPosition_left  ++ "px")
+      , ("top",    toString corectedPosition_right ++ "px")
       ]
     ] 
     []
@@ -206,20 +205,41 @@ deflectCircles_ofCircles model =
 
 deflectCircle_ofBoundary : Boundary -> Circle -> Circle
 deflectCircle_ofBoundary boundary circle =
-  if      isCircleIn_upRight_corner    circle boundary then reflectCircleBackward     circle
-  else if isCircleIn_rightDown_corner  circle boundary then reflectCircleBackward     circle
-  else if isCircleIn_downLeft_corner   circle boundary then reflectCircleBackward     circle
-  else if isCircleIn_leftUp_corner     circle boundary then reflectCircleBackward     circle
+  let 
+    isCircle_above_boundary   = if (circle.y - circle.radius) < boundary.y                   then True else False
+    isCircle_leftOf_boundary  = if (circle.x - circle.radius) < boundary.x                   then True else False
+    isCircle_rightOf_boundary = if (circle.x + circle.radius) > boundary.x + boundary.wight  then True else False
+    isCircle_below_boundary   = if (circle.y + circle.radius) > boundary.y + boundary.height then True else False
 
-  else if isCircle_leftOf_boundary  circle boundary then reflectCircle_verticali   circle
-  else if isCircle_rightOf_boundary circle boundary then reflectCircle_verticali   circle
-  else if isCircle_above_boundary   circle boundary then reflectCircle_horizontali circle
-  else if isCircle_below_boundary   circle boundary then reflectCircle_horizontali circle
-  else    circle
+    isCircleIn_leftUp_corner    = isCircle_above_boundary && isCircle_leftOf_boundary  
+    isCircleIn_upRight_corner   = isCircle_above_boundary && isCircle_rightOf_boundary  
+    isCircleIn_rightDown_corner = isCircle_below_boundary && isCircle_rightOf_boundary  
+    isCircleIn_downLeft_corner  = isCircle_below_boundary && isCircle_leftOf_boundary  
 
-reflectCircleBackward : Circle -> Circle
-reflectCircleBackward circle =
-  { circle | movementDirection = circle.movementDirection + 180}
+    isCircleInTheCorner = ( isCircle_above_boundary && isCircle_leftOf_boundary  ) ||  
+                          ( isCircle_above_boundary && isCircle_rightOf_boundary ) ||
+                          ( isCircle_below_boundary && isCircle_rightOf_boundary ) ||
+                          ( isCircle_below_boundary && isCircle_leftOf_boundary  )
+
+    reflectDegree degree direction = 
+      let
+        normalise    degree = Basics.toFloat <| (Basics.round degree) % 360
+        skip360      degree = if degree == 360 then 0 else degree
+        normaliseAll degree = degree |> normalise |> skip360
+      in
+        case direction of "backwards"   -> degree |> (+) 180           |> normaliseAll
+                          "horizontali" -> degree |> negate            |> normaliseAll
+                          "verticali"   -> degree |> negate |> (+) 180 |> normaliseAll
+                          _             -> degree                      |> normaliseAll
+
+
+    reflectCircle direction = { circle | movementDirection = reflectDegree circle.movementDirection direction }
+    
+  in
+    if      isCircleInTheCorner                                   then reflectCircle "backwards"
+    else if isCircle_leftOf_boundary || isCircle_rightOf_boundary then reflectCircle "horizontali"
+    else if isCircle_above_boundary  || isCircle_below_boundary   then reflectCircle "verticali"
+    else    circle
 
 deflectCircle_ofCircle : List Circle -> Circle -> Circle
 deflectCircle_ofCircle list_circles circle = 
@@ -237,63 +257,6 @@ deflectCircle_ofCircle list_circles circle =
         else    checkNextCircle
 
 
-
-
-
-reflectCircle_verticali : Circle -> Circle
-reflectCircle_verticali circle =
-  { circle | movementDirection = reflectDegree circle.movementDirection True }
-
-reflectCircle_horizontali : Circle -> Circle
-reflectCircle_horizontali circle =
-  { circle | movementDirection = reflectDegree circle.movementDirection False }
-
-reflectDegree : Float -> Bool -> Float
-reflectDegree degree isVertically =
-  let 
-    piToAdd = if isVertically then 180 else 0
-    reflected = negate degree
-    normalised = Basics.toFloat <| (Basics.round reflected) % 360
-    result = normalised + piToAdd
-  in
-    if result == 360 then 0
-    else result
-
-isCircleIn_leftUp_corner : Circle -> Boundary -> Bool 
-isCircleIn_leftUp_corner circle boundary = 
-  isCircle_above_boundary circle boundary &&
-  isCircle_leftOf_boundary circle boundary 
-
-isCircleIn_upRight_corner : Circle -> Boundary -> Bool 
-isCircleIn_upRight_corner circle boundary = 
-  isCircle_above_boundary circle boundary &&
-  isCircle_rightOf_boundary circle boundary 
-
-isCircleIn_rightDown_corner : Circle -> Boundary -> Bool 
-isCircleIn_rightDown_corner circle boundary = 
-  isCircle_below_boundary circle boundary &&
-  isCircle_rightOf_boundary circle boundary 
-
-isCircleIn_downLeft_corner : Circle -> Boundary -> Bool 
-isCircleIn_downLeft_corner circle boundary = 
-  isCircle_below_boundary circle boundary &&
-  isCircle_leftOf_boundary circle boundary   
-
-isCircle_below_boundary : Circle -> Boundary -> Bool
-isCircle_below_boundary circle boundary = 
-  if (circle.y + circle.radius) > boundary.y + boundary.height then True else False
-
-isCircle_above_boundary : Circle -> Boundary -> Bool
-isCircle_above_boundary circle boundary = 
-  if (circle.y - circle.radius) < boundary.y then True else False
-
-isCircle_leftOf_boundary : Circle -> Boundary -> Bool
-isCircle_leftOf_boundary circle boundary = 
-  if (circle.x - circle.radius) < boundary.x then True else False
-
-isCircle_rightOf_boundary : Circle -> Boundary -> Bool
-isCircle_rightOf_boundary circle boundary = 
-  if (circle.x + circle.radius) > boundary.x + boundary.wight then True else False
 
 justToCircle : Maybe Circle -> Circle
 justToCircle justCircle = 
@@ -354,19 +317,6 @@ setSelectedCirclesToMousePosition model mousePosition =
       x
   in
     { model | circlesList = List.map map model.circlesList }
-
---isCircleCollided : List Circle -> Circle -> Int
---isCircleCollided list_circle circle = 
---  case list_circle of
---    [] -> False
---    (x::xs) -> 
---      if x.id == circle.id then 
---        isCircleCollided xs circle
---      else
---        if isTwoCirclesCollided x circle then
---          True
---        else
---          isCircleCollided xs circle
 
 getCircleOtherColliderId : List Circle -> Circle -> Int
 getCircleOtherColliderId list_circle circle =

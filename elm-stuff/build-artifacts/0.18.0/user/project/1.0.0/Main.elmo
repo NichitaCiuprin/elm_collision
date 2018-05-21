@@ -117,64 +117,6 @@ var _user$project$Main$moveCircles = function (model) {
 			circlesList: A2(_elm_lang$core$List$map, map, model.circlesList)
 		});
 };
-var _user$project$Main$isCircle_rightOf_boundary = F2(
-	function (circle, boundary) {
-		return (_elm_lang$core$Native_Utils.cmp(circle.x + circle.radius, boundary.x + boundary.wight) > 0) ? true : false;
-	});
-var _user$project$Main$isCircle_leftOf_boundary = F2(
-	function (circle, boundary) {
-		return (_elm_lang$core$Native_Utils.cmp(circle.x - circle.radius, boundary.x) < 0) ? true : false;
-	});
-var _user$project$Main$isCircle_above_boundary = F2(
-	function (circle, boundary) {
-		return (_elm_lang$core$Native_Utils.cmp(circle.y - circle.radius, boundary.y) < 0) ? true : false;
-	});
-var _user$project$Main$isCircle_below_boundary = F2(
-	function (circle, boundary) {
-		return (_elm_lang$core$Native_Utils.cmp(circle.y + circle.radius, boundary.y + boundary.height) > 0) ? true : false;
-	});
-var _user$project$Main$isCircleIn_downLeft_corner = F2(
-	function (circle, boundary) {
-		return A2(_user$project$Main$isCircle_below_boundary, circle, boundary) && A2(_user$project$Main$isCircle_leftOf_boundary, circle, boundary);
-	});
-var _user$project$Main$isCircleIn_rightDown_corner = F2(
-	function (circle, boundary) {
-		return A2(_user$project$Main$isCircle_below_boundary, circle, boundary) && A2(_user$project$Main$isCircle_rightOf_boundary, circle, boundary);
-	});
-var _user$project$Main$isCircleIn_upRight_corner = F2(
-	function (circle, boundary) {
-		return A2(_user$project$Main$isCircle_above_boundary, circle, boundary) && A2(_user$project$Main$isCircle_rightOf_boundary, circle, boundary);
-	});
-var _user$project$Main$isCircleIn_leftUp_corner = F2(
-	function (circle, boundary) {
-		return A2(_user$project$Main$isCircle_above_boundary, circle, boundary) && A2(_user$project$Main$isCircle_leftOf_boundary, circle, boundary);
-	});
-var _user$project$Main$reflectDegree = F2(
-	function (degree, isVertically) {
-		var reflected = _elm_lang$core$Basics$negate(degree);
-		var normalised = _elm_lang$core$Basics$toFloat(
-			A2(
-				_elm_lang$core$Basics_ops['%'],
-				_elm_lang$core$Basics$round(reflected),
-				360));
-		var piToAdd = isVertically ? 180 : 0;
-		var result = normalised + piToAdd;
-		return _elm_lang$core$Native_Utils.eq(result, 360) ? 0 : result;
-	});
-var _user$project$Main$reflectCircle_horizontali = function (circle) {
-	return _elm_lang$core$Native_Utils.update(
-		circle,
-		{
-			movementDirection: A2(_user$project$Main$reflectDegree, circle.movementDirection, false)
-		});
-};
-var _user$project$Main$reflectCircle_verticali = function (circle) {
-	return _elm_lang$core$Native_Utils.update(
-		circle,
-		{
-			movementDirection: A2(_user$project$Main$reflectDegree, circle.movementDirection, true)
-		});
-};
 var _user$project$Main$deflectCircle_ofCircle = F2(
 	function (list_circles, circle) {
 		var _p3 = list_circles;
@@ -191,14 +133,68 @@ var _user$project$Main$deflectCircle_ofCircle = F2(
 			return sameCircle ? checkNextCircle : (otherColliderFound ? swapMovementDirections : checkNextCircle);
 		}
 	});
-var _user$project$Main$reflectCircleBackward = function (circle) {
-	return _elm_lang$core$Native_Utils.update(
-		circle,
-		{movementDirection: circle.movementDirection + 180});
-};
 var _user$project$Main$deflectCircle_ofBoundary = F2(
 	function (boundary, circle) {
-		return A2(_user$project$Main$isCircleIn_upRight_corner, circle, boundary) ? _user$project$Main$reflectCircleBackward(circle) : (A2(_user$project$Main$isCircleIn_rightDown_corner, circle, boundary) ? _user$project$Main$reflectCircleBackward(circle) : (A2(_user$project$Main$isCircleIn_downLeft_corner, circle, boundary) ? _user$project$Main$reflectCircleBackward(circle) : (A2(_user$project$Main$isCircleIn_leftUp_corner, circle, boundary) ? _user$project$Main$reflectCircleBackward(circle) : (A2(_user$project$Main$isCircle_leftOf_boundary, circle, boundary) ? _user$project$Main$reflectCircle_verticali(circle) : (A2(_user$project$Main$isCircle_rightOf_boundary, circle, boundary) ? _user$project$Main$reflectCircle_verticali(circle) : (A2(_user$project$Main$isCircle_above_boundary, circle, boundary) ? _user$project$Main$reflectCircle_horizontali(circle) : (A2(_user$project$Main$isCircle_below_boundary, circle, boundary) ? _user$project$Main$reflectCircle_horizontali(circle) : circle)))))));
+		var reflectDegree = F2(
+			function (degree, direction) {
+				var skip360 = function (degree) {
+					return _elm_lang$core$Native_Utils.eq(degree, 360) ? 0 : degree;
+				};
+				var normalise = function (degree) {
+					return _elm_lang$core$Basics$toFloat(
+						A2(
+							_elm_lang$core$Basics_ops['%'],
+							_elm_lang$core$Basics$round(degree),
+							360));
+				};
+				var normaliseAll = function (degree) {
+					return skip360(
+						normalise(degree));
+				};
+				var _p5 = direction;
+				switch (_p5) {
+					case 'backwards':
+						return normaliseAll(
+							A2(
+								F2(
+									function (x, y) {
+										return x + y;
+									}),
+								180,
+								degree));
+					case 'horizontali':
+						return normaliseAll(
+							_elm_lang$core$Basics$negate(degree));
+					case 'verticali':
+						return normaliseAll(
+							A2(
+								F2(
+									function (x, y) {
+										return x + y;
+									}),
+								180,
+								_elm_lang$core$Basics$negate(degree)));
+					default:
+						return normaliseAll(degree);
+				}
+			});
+		var reflectCircle = function (direction) {
+			return _elm_lang$core$Native_Utils.update(
+				circle,
+				{
+					movementDirection: A2(reflectDegree, circle.movementDirection, direction)
+				});
+		};
+		var isCircle_below_boundary = (_elm_lang$core$Native_Utils.cmp(circle.y + circle.radius, boundary.y + boundary.height) > 0) ? true : false;
+		var isCircle_rightOf_boundary = (_elm_lang$core$Native_Utils.cmp(circle.x + circle.radius, boundary.x + boundary.wight) > 0) ? true : false;
+		var isCircleIn_rightDown_corner = isCircle_below_boundary && isCircle_rightOf_boundary;
+		var isCircle_leftOf_boundary = (_elm_lang$core$Native_Utils.cmp(circle.x - circle.radius, boundary.x) < 0) ? true : false;
+		var isCircleIn_downLeft_corner = isCircle_below_boundary && isCircle_leftOf_boundary;
+		var isCircle_above_boundary = (_elm_lang$core$Native_Utils.cmp(circle.y - circle.radius, boundary.y) < 0) ? true : false;
+		var isCircleIn_leftUp_corner = isCircle_above_boundary && isCircle_leftOf_boundary;
+		var isCircleIn_upRight_corner = isCircle_above_boundary && isCircle_rightOf_boundary;
+		var isCircleInTheCorner = (isCircle_above_boundary && isCircle_leftOf_boundary) || ((isCircle_above_boundary && isCircle_rightOf_boundary) || ((isCircle_below_boundary && isCircle_rightOf_boundary) || (isCircle_below_boundary && isCircle_leftOf_boundary)));
+		return isCircleInTheCorner ? reflectCircle('backwards') : ((isCircle_leftOf_boundary || isCircle_rightOf_boundary) ? reflectCircle('horizontali') : ((isCircle_above_boundary || isCircle_below_boundary) ? reflectCircle('verticali') : circle));
 	});
 var _user$project$Main$deflectCircles_ofCircles = function (model) {
 	var map = _user$project$Main$deflectCircle_ofCircle(model.circlesList);
@@ -227,7 +223,8 @@ var _user$project$Main$print = function (log) {
 		});
 };
 var _user$project$Main$boundaryToHTML = function (boundary) {
-	var borderThickness = 5;
+	var corectedPosition_right = boundary.y - boundary.borderThickness;
+	var corectedPosition_left = boundary.x - boundary.borderThickness;
 	return A2(
 		_elm_lang$html$Html$div,
 		{
@@ -240,7 +237,7 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 						_0: 'border',
 						_1: A2(
 							_elm_lang$core$Basics_ops['++'],
-							_elm_lang$core$Basics$toString(borderThickness),
+							_elm_lang$core$Basics$toString(boundary.borderThickness),
 							'px solid red')
 					},
 					_1: {
@@ -273,7 +270,7 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 										_0: 'left',
 										_1: A2(
 											_elm_lang$core$Basics_ops['++'],
-											_elm_lang$core$Basics$toString(boundary.x - borderThickness),
+											_elm_lang$core$Basics$toString(corectedPosition_left),
 											'px')
 									},
 									_1: {
@@ -283,7 +280,7 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 											_0: 'top',
 											_1: A2(
 												_elm_lang$core$Basics_ops['++'],
-												_elm_lang$core$Basics$toString(boundary.y - borderThickness),
+												_elm_lang$core$Basics$toString(corectedPosition_right),
 												'px')
 										},
 										_1: {ctor: '[]'}
@@ -299,14 +296,14 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 };
 var _user$project$Main$update = F2(
 	function (msg, model) {
-		var _p5 = msg;
-		switch (_p5.ctor) {
+		var _p6 = msg;
+		switch (_p6.ctor) {
 			case 'OnMilisecond':
 				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 			case 'OnCircleMouseDown':
 				return {
 					ctor: '_Tuple2',
-					_0: A2(_user$project$Main$selectCircle, model, _p5._0),
+					_0: A2(_user$project$Main$selectCircle, model, _p6._0),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'OnMouseUp':
@@ -318,7 +315,7 @@ var _user$project$Main$update = F2(
 			case 'OnMouseMoved':
 				return {
 					ctor: '_Tuple2',
-					_0: A2(_user$project$Main$setSelectedCirclesToMousePosition, model, _p5._0),
+					_0: A2(_user$project$Main$setSelectedCirclesToMousePosition, model, _p6._0),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			default:
@@ -342,16 +339,16 @@ var _user$project$Main$Circle = F8(
 		return {id: a, x: b, y: c, radius: d, isSelected: e, otherColliderId: f, movementDirection: g, movementSpeed: h};
 	});
 var _user$project$Main$justToCircle = function (justCircle) {
-	var _p6 = justCircle;
-	if (_p6.ctor === 'Just') {
-		return _p6._0;
+	var _p7 = justCircle;
+	if (_p7.ctor === 'Just') {
+		return _p7._0;
 	} else {
 		return A8(_user$project$Main$Circle, 0, 0, 0, 0, false, 0, 0, 0);
 	}
 };
-var _user$project$Main$Boundary = F4(
-	function (a, b, c, d) {
-		return {x: a, y: b, height: c, wight: d};
+var _user$project$Main$Boundary = F5(
+	function (a, b, c, d, e) {
+		return {x: a, y: b, height: c, wight: d, borderThickness: e};
 	});
 var _user$project$Main$initModel = {
 	circlesList: {
@@ -367,7 +364,7 @@ var _user$project$Main$initModel = {
 			}
 		}
 	},
-	boundary: A4(_user$project$Main$Boundary, 700, 100, 700, 1000)
+	boundary: A5(_user$project$Main$Boundary, 700, 100, 700, 1000, 5)
 };
 var _user$project$Main$OnFrameUpdate = function (a) {
 	return {ctor: 'OnFrameUpdate', _0: a};
@@ -467,8 +464,6 @@ var _user$project$Main$circlesToHTML = function (listOfCircles) {
 		A2(_elm_lang$core$List$map, circleToHTML, listOfCircles));
 };
 var _user$project$Main$view = function (model) {
-	var circle = _user$project$Main$justToCircle(
-		_elm_lang$core$List$head(model.circlesList));
 	return A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
