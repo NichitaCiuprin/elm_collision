@@ -9,13 +9,11 @@
         <script src="elm.js"></script>             
         <script>             
             var app = Elm.Main.embed(document.getElementById("elm-area"));
-            
+
             requestAnimationFrame(callback);
 
-            function callback ()
-            {
+            function callback () {
                 app.ports.frameUpdated.send(""); 
-                //alert("Hello! I am an alert box!!");
                 requestAnimationFrame(callback)
             }
 

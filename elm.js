@@ -9058,95 +9058,160 @@ var _user$project$Main$isTwoCirclesCollided = F2(
 				Math.pow(c1.y - c2.y, 2)));
 		return _elm_lang$core$Native_Utils.cmp(radiusSum, distance) > -1;
 	});
-var _user$project$Main$getCircleOtherColliderId = F2(
-	function (list_circle, circle) {
-		getCircleOtherColliderId:
-		while (true) {
-			var _p0 = list_circle;
+var _user$project$Main$manage_otherColliderId = function (model) {
+	var f2 = F3(
+		function (c1, rest, addTo) {
+			var _p0 = rest;
 			if (_p0.ctor === '[]') {
-				return 0;
+				return {ctor: '::', _0: c1, _1: addTo};
 			} else {
 				var _p2 = _p0._1;
 				var _p1 = _p0._0;
-				if (_elm_lang$core$Native_Utils.eq(_p1.id, circle.id)) {
-					var _v1 = _p2,
-						_v2 = circle;
-					list_circle = _v1;
-					circle = _v2;
-					continue getCircleOtherColliderId;
+				var doNothing = A3(
+					f2,
+					_p1,
+					_p2,
+					{ctor: '::', _0: c1, _1: addTo});
+				var collided = A2(_user$project$Main$isTwoCirclesCollided, c1, _p1);
+				var is_y_contains_c1 = A2(_elm_lang$core$List$member, c1.id, _p1.otherCollidersId);
+				var is_c1_contains_y = A2(_elm_lang$core$List$member, _p1.id, c1.otherCollidersId);
+				var collidedInPreviousFrame = is_c1_contains_y && is_y_contains_c1;
+				var remove_y = _elm_lang$core$Native_Utils.update(
+					_p1,
+					{
+						otherCollidersId: A2(
+							_elm_lang$core$List$filter,
+							function (id) {
+								return !_elm_lang$core$Native_Utils.eq(id, c1.id);
+							},
+							_p1.otherCollidersId)
+					});
+				var remove_c1 = _elm_lang$core$Native_Utils.update(
+					c1,
+					{
+						otherCollidersId: A2(
+							_elm_lang$core$List$filter,
+							function (id) {
+								return !_elm_lang$core$Native_Utils.eq(id, _p1.id);
+							},
+							c1.otherCollidersId)
+					});
+				var removeIds = A3(
+					f2,
+					remove_y,
+					_p2,
+					{ctor: '::', _0: remove_c1, _1: addTo});
+				var add_y = _elm_lang$core$Native_Utils.update(
+					_p1,
+					{
+						otherCollidersId: {ctor: '::', _0: c1.id, _1: _p1.otherCollidersId}
+					});
+				var add_c1 = _elm_lang$core$Native_Utils.update(
+					c1,
+					{
+						otherCollidersId: {ctor: '::', _0: _p1.id, _1: c1.otherCollidersId}
+					});
+				var addIds = A3(
+					f2,
+					add_y,
+					_p2,
+					{ctor: '::', _0: add_c1, _1: addTo});
+				return collided ? (collidedInPreviousFrame ? doNothing : addIds) : removeIds;
+			}
+		});
+	var f1 = function (circles) {
+		var _p3 = circles;
+		if (_p3.ctor === '[]') {
+			return {ctor: '[]'};
+		} else {
+			if (_p3._1.ctor === '[]') {
+				return {
+					ctor: '::',
+					_0: _p3._0,
+					_1: {ctor: '[]'}
+				};
+			} else {
+				var newList = A3(
+					f2,
+					_p3._0,
+					_p3._1,
+					{ctor: '[]'});
+				var _p4 = newList;
+				if (_p4.ctor === '[]') {
+					return {ctor: '[]'};
 				} else {
-					if (A2(_user$project$Main$isTwoCirclesCollided, _p1, circle)) {
-						return _p1.id;
-					} else {
-						var _v3 = _p2,
-							_v4 = circle;
-						list_circle = _v3;
-						circle = _v4;
-						continue getCircleOtherColliderId;
-					}
+					return {
+						ctor: '::',
+						_0: _p4._0,
+						_1: f1(_p4._1)
+					};
 				}
 			}
 		}
-	});
-var _user$project$Main$setSelectedCirclesToMousePosition = F2(
-	function (model, mousePosition) {
-		var map = function (x) {
-			return x.isSelected ? _elm_lang$core$Native_Utils.update(
-				x,
-				{
-					x: _elm_lang$core$Basics$toFloat(mousePosition.x),
-					y: _elm_lang$core$Basics$toFloat(mousePosition.y)
-				}) : x;
-		};
-		return _elm_lang$core$Native_Utils.update(
-			model,
-			{
-				circlesList: A2(_elm_lang$core$List$map, map, model.circlesList)
-			});
-	});
-var _user$project$Main$diselectCircles = function (model) {
-	var map = function (x) {
-		return _elm_lang$core$Native_Utils.update(
-			x,
-			{isSelected: false});
 	};
 	return _elm_lang$core$Native_Utils.update(
 		model,
 		{
-			circlesList: A2(_elm_lang$core$List$map, map, model.circlesList)
+			circles: f1(model.circles)
 		});
 };
-var _user$project$Main$selectCircle = F2(
-	function (model, circle) {
-		var map = function (x) {
-			return _elm_lang$core$Native_Utils.eq(x.id, circle.id) ? _elm_lang$core$Native_Utils.update(
-				x,
-				{isSelected: true}) : x;
-		};
-		return _elm_lang$core$Native_Utils.update(
-			model,
-			{
-				circlesList: A2(_elm_lang$core$List$map, map, model.circlesList)
+var _user$project$Main$setSelectedCircleToMousePosition = F2(
+	function (mousePosition, model) {
+		var setSelectedCircleToMousePosition2 = F2(
+			function (mousePosition, circles) {
+				var _p5 = circles;
+				if (_p5.ctor === '[]') {
+					return circles;
+				} else {
+					var _p7 = _p5._1;
+					var _p6 = _p5._0;
+					return _p6.isSelected ? {
+						ctor: '::',
+						_0: _elm_lang$core$Native_Utils.update(
+							_p6,
+							{
+								x: _elm_lang$core$Basics$toFloat(mousePosition.x),
+								y: _elm_lang$core$Basics$toFloat(mousePosition.y)
+							}),
+						_1: _p7
+					} : {
+						ctor: '::',
+						_0: _p6,
+						_1: A2(setSelectedCircleToMousePosition2, mousePosition, _p7)
+					};
+				}
 			});
+		var newCircles = A2(setSelectedCircleToMousePosition2, mousePosition, model.circles);
+		var newModel = _elm_lang$core$Native_Utils.update(
+			model,
+			{circles: newCircles});
+		return newModel;
 	});
-var _user$project$Main$setOtherColliderId = F2(
-	function (list_circles, circle) {
+var _user$project$Main$diselectCircles = function (model) {
+	var map = function (circle) {
 		return _elm_lang$core$Native_Utils.update(
 			circle,
-			{
-				otherColliderId: A2(_user$project$Main$getCircleOtherColliderId, list_circles, circle)
-			});
-	});
-var _user$project$Main$markCollidedCircles = function (model) {
-	return _elm_lang$core$Native_Utils.update(
+			{isSelected: false});
+	};
+	var newCircles = A2(_elm_lang$core$List$map, map, model.circles);
+	var newModel = _elm_lang$core$Native_Utils.update(
 		model,
-		{
-			circlesList: A2(
-				_elm_lang$core$List$map,
-				_user$project$Main$setOtherColliderId(model.circlesList),
-				model.circlesList)
-		});
+		{circles: newCircles});
+	return newModel;
 };
+var _user$project$Main$selectCircle = F2(
+	function (circleIdToSelect, model) {
+		var map = function (circle) {
+			return _elm_lang$core$Native_Utils.eq(circle.id, circleIdToSelect) ? _elm_lang$core$Native_Utils.update(
+				circle,
+				{isSelected: true}) : circle;
+		};
+		var newCircles = A2(_elm_lang$core$List$map, map, model.circles);
+		var newModel = _elm_lang$core$Native_Utils.update(
+			model,
+			{circles: newCircles});
+		return newModel;
+	});
 var _user$project$Main$moveCircles = function (model) {
 	var map = function (item) {
 		return _elm_lang$core$Native_Utils.update(
@@ -9158,123 +9223,133 @@ var _user$project$Main$moveCircles = function (model) {
 					_elm_lang$core$Basics$degrees(item.movementDirection)) * item.movementSpeed)
 			});
 	};
-	return _elm_lang$core$Native_Utils.update(
+	var newCircles = A2(_elm_lang$core$List$map, map, model.circles);
+	var newModel = _elm_lang$core$Native_Utils.update(
 		model,
-		{
-			circlesList: A2(_elm_lang$core$List$map, map, model.circlesList)
-		});
+		{circles: newCircles});
+	return newModel;
 };
-var _user$project$Main$isCircle_rightOf_boundary = F2(
-	function (circle, boundary) {
-		return (_elm_lang$core$Native_Utils.cmp(circle.x + circle.radius, boundary.x + boundary.wight) > 0) ? true : false;
-	});
-var _user$project$Main$isCircle_leftOf_boundary = F2(
-	function (circle, boundary) {
-		return (_elm_lang$core$Native_Utils.cmp(circle.x - circle.radius, boundary.x) < 0) ? true : false;
-	});
-var _user$project$Main$isCircle_above_boundary = F2(
-	function (circle, boundary) {
-		return (_elm_lang$core$Native_Utils.cmp(circle.y - circle.radius, boundary.y) < 0) ? true : false;
-	});
-var _user$project$Main$isCircle_below_boundary = F2(
-	function (circle, boundary) {
-		return (_elm_lang$core$Native_Utils.cmp(circle.y + circle.radius, boundary.y + boundary.height) > 0) ? true : false;
-	});
-var _user$project$Main$isCircleIn_downLeft_corner = F2(
-	function (circle, boundary) {
-		return A2(_user$project$Main$isCircle_below_boundary, circle, boundary) && A2(_user$project$Main$isCircle_leftOf_boundary, circle, boundary);
-	});
-var _user$project$Main$isCircleIn_rightDown_corner = F2(
-	function (circle, boundary) {
-		return A2(_user$project$Main$isCircle_below_boundary, circle, boundary) && A2(_user$project$Main$isCircle_rightOf_boundary, circle, boundary);
-	});
-var _user$project$Main$isCircleIn_upRight_corner = F2(
-	function (circle, boundary) {
-		return A2(_user$project$Main$isCircle_above_boundary, circle, boundary) && A2(_user$project$Main$isCircle_rightOf_boundary, circle, boundary);
-	});
-var _user$project$Main$isCircleIn_leftUp_corner = F2(
-	function (circle, boundary) {
-		return A2(_user$project$Main$isCircle_above_boundary, circle, boundary) && A2(_user$project$Main$isCircle_leftOf_boundary, circle, boundary);
-	});
-var _user$project$Main$reflectDegree = F2(
-	function (degree, isVertically) {
-		var reflected = _elm_lang$core$Basics$negate(degree);
-		var normalised = _elm_lang$core$Basics$toFloat(
-			A2(
-				_elm_lang$core$Basics_ops['%'],
-				_elm_lang$core$Basics$round(reflected),
-				360));
-		var piToAdd = isVertically ? 180 : 0;
-		var result = normalised + piToAdd;
-		return _elm_lang$core$Native_Utils.eq(result, 360) ? 0 : result;
-	});
-var _user$project$Main$reflectCircle_horizontali = function (circle) {
-	return _elm_lang$core$Native_Utils.update(
-		circle,
-		{
-			movementDirection: A2(_user$project$Main$reflectDegree, circle.movementDirection, false)
-		});
-};
-var _user$project$Main$reflectCircle_verticali = function (circle) {
-	return _elm_lang$core$Native_Utils.update(
-		circle,
-		{
-			movementDirection: A2(_user$project$Main$reflectDegree, circle.movementDirection, true)
-		});
-};
-var _user$project$Main$deflectCircle_ofCircle = F2(
-	function (list_circles, circle) {
-		var _p3 = list_circles;
-		if (_p3.ctor === '[]') {
-			return circle;
-		} else {
-			var _p4 = _p3._0;
-			var swapMovementDirections = _elm_lang$core$Native_Utils.update(
-				circle,
-				{movementDirection: _p4.movementDirection});
-			var otherColliderFound = _elm_lang$core$Native_Utils.eq(circle.otherColliderId, _p4.id);
-			var sameCircle = _elm_lang$core$Native_Utils.eq(_p4.id, circle.id);
-			var checkNextCircle = A2(_user$project$Main$deflectCircle_ofCircle, _p3._1, circle);
-			return sameCircle ? checkNextCircle : (otherColliderFound ? swapMovementDirections : checkNextCircle);
-		}
-	});
-var _user$project$Main$reflectCircleBackward = function (circle) {
-	return _elm_lang$core$Native_Utils.update(
-		circle,
-		{movementDirection: circle.movementDirection + 180});
-};
-var _user$project$Main$deflectCircle_ofBoundary = F2(
-	function (boundary, circle) {
-		return A2(_user$project$Main$isCircleIn_upRight_corner, circle, boundary) ? _user$project$Main$reflectCircleBackward(circle) : (A2(_user$project$Main$isCircleIn_rightDown_corner, circle, boundary) ? _user$project$Main$reflectCircleBackward(circle) : (A2(_user$project$Main$isCircleIn_downLeft_corner, circle, boundary) ? _user$project$Main$reflectCircleBackward(circle) : (A2(_user$project$Main$isCircleIn_leftUp_corner, circle, boundary) ? _user$project$Main$reflectCircleBackward(circle) : (A2(_user$project$Main$isCircle_leftOf_boundary, circle, boundary) ? _user$project$Main$reflectCircle_verticali(circle) : (A2(_user$project$Main$isCircle_rightOf_boundary, circle, boundary) ? _user$project$Main$reflectCircle_verticali(circle) : (A2(_user$project$Main$isCircle_above_boundary, circle, boundary) ? _user$project$Main$reflectCircle_horizontali(circle) : (A2(_user$project$Main$isCircle_below_boundary, circle, boundary) ? _user$project$Main$reflectCircle_horizontali(circle) : circle)))))));
-	});
 var _user$project$Main$deflectCircles_ofCircles = function (model) {
-	var map = _user$project$Main$deflectCircle_ofCircle(model.circlesList);
-	return _elm_lang$core$Native_Utils.update(
-		model,
-		{
-			circlesList: A2(_elm_lang$core$List$map, map, model.circlesList)
+	var deflectCircle_ofCircle = F2(
+		function (list_circles, circle) {
+			var _p8 = list_circles;
+			if (_p8.ctor === '[]') {
+				return circle;
+			} else {
+				var _p9 = _p8._0;
+				var otherColliderFound = A2(_elm_lang$core$List$member, _p9.id, circle.otherCollidersId);
+				var sameCircle = _elm_lang$core$Native_Utils.eq(_p9.id, circle.id);
+				var checkNextCircle = A2(deflectCircle_ofCircle, _p8._1, circle);
+				var direction_fromP1_toP2 = F2(
+					function (p1, p2) {
+						var radiansToDegree = function (rad) {
+							return rad * 57.2958;
+						};
+						var vector = {x: p2.x - p1.x, y: p2.y - p1.y};
+						var vectorDegree = radiansToDegree(
+							A2(_elm_lang$core$Basics$atan2, vector.y, vector.x));
+						return vectorDegree;
+					});
+				var swapMovementDirections = _elm_lang$core$Native_Utils.update(
+					circle,
+					{
+						movementDirection: 180 + A2(
+							direction_fromP1_toP2,
+							{x: circle.x, y: 0 - circle.y},
+							{x: _p9.x, y: 0 - _p9.y})
+					});
+				return sameCircle ? checkNextCircle : (otherColliderFound ? swapMovementDirections : checkNextCircle);
+			}
 		});
+	var newCircles = A2(
+		_elm_lang$core$List$map,
+		deflectCircle_ofCircle(model.circles),
+		model.circles);
+	var newModel = _elm_lang$core$Native_Utils.update(
+		model,
+		{circles: newCircles});
+	return newModel;
 };
 var _user$project$Main$deflectCircles_ofBoundary = function (model) {
-	var map = _user$project$Main$deflectCircle_ofBoundary(model.boundary);
-	return _elm_lang$core$Native_Utils.update(
+	var deflectCircle_ofBoundary = F2(
+		function (boundary, circle) {
+			var skip360 = function (degree) {
+				return _elm_lang$core$Native_Utils.eq(degree, 360) ? 0 : degree;
+			};
+			var normalise = function (degree) {
+				return _elm_lang$core$Basics$toFloat(
+					A2(
+						_elm_lang$core$Basics_ops['%'],
+						_elm_lang$core$Basics$round(degree),
+						360));
+			};
+			var normaliseAll = function (degree) {
+				return skip360(
+					normalise(degree));
+			};
+			var reflectDegree_backwards = function (degree) {
+				return normaliseAll(
+					A2(
+						F2(
+							function (x, y) {
+								return x + y;
+							}),
+						180,
+						degree));
+			};
+			var reflectCircle_backwards = _elm_lang$core$Native_Utils.update(
+				circle,
+				{
+					movementDirection: reflectDegree_backwards(circle.movementDirection)
+				});
+			var reflectDegree_horizontali = function (degree) {
+				return normaliseAll(
+					_elm_lang$core$Basics$negate(degree));
+			};
+			var reflectCircle_horizontali = _elm_lang$core$Native_Utils.update(
+				circle,
+				{
+					movementDirection: reflectDegree_horizontali(circle.movementDirection)
+				});
+			var reflectDegree_verticali = function (degree) {
+				return normaliseAll(
+					A2(
+						F2(
+							function (x, y) {
+								return x + y;
+							}),
+						180,
+						_elm_lang$core$Basics$negate(degree)));
+			};
+			var reflectCircle_verticali = _elm_lang$core$Native_Utils.update(
+				circle,
+				{
+					movementDirection: reflectDegree_verticali(circle.movementDirection)
+				});
+			var isCircle_below_boundary = (_elm_lang$core$Native_Utils.cmp(circle.y + circle.radius, boundary.y + boundary.height) > 0) ? true : false;
+			var isCircle_rightOf_boundary = (_elm_lang$core$Native_Utils.cmp(circle.x + circle.radius, boundary.x + boundary.wight) > 0) ? true : false;
+			var isCircleIn_rightDown_corner = isCircle_below_boundary && isCircle_rightOf_boundary;
+			var isCircle_leftOf_boundary = (_elm_lang$core$Native_Utils.cmp(circle.x - circle.radius, boundary.x) < 0) ? true : false;
+			var isCircleIn_downLeft_corner = isCircle_below_boundary && isCircle_leftOf_boundary;
+			var isCircle_above_boundary = (_elm_lang$core$Native_Utils.cmp(circle.y - circle.radius, boundary.y) < 0) ? true : false;
+			var isCircleIn_leftUp_corner = isCircle_above_boundary && isCircle_leftOf_boundary;
+			var isCircleIn_upRight_corner = isCircle_above_boundary && isCircle_rightOf_boundary;
+			var isCircleInTheCorner = (isCircle_above_boundary && isCircle_leftOf_boundary) || ((isCircle_above_boundary && isCircle_rightOf_boundary) || ((isCircle_below_boundary && isCircle_rightOf_boundary) || (isCircle_below_boundary && isCircle_leftOf_boundary)));
+			return isCircleInTheCorner ? reflectCircle_backwards : ((isCircle_leftOf_boundary || isCircle_rightOf_boundary) ? reflectCircle_verticali : ((isCircle_above_boundary || isCircle_below_boundary) ? reflectCircle_horizontali : circle));
+		});
+	var newCircles = A2(
+		_elm_lang$core$List$map,
+		deflectCircle_ofBoundary(model.boundary),
+		model.circles);
+	var newModel = _elm_lang$core$Native_Utils.update(
 		model,
-		{
-			circlesList: A2(_elm_lang$core$List$map, map, model.circlesList)
-		});
+		{circles: newCircles});
+	return newModel;
 };
-var _user$project$Main$print = function (log) {
-	return A2(
-		_elm_lang$html$Html$p,
-		{ctor: '[]'},
-		{
-			ctor: '::',
-			_0: _elm_lang$html$Html$text(log),
-			_1: {ctor: '[]'}
-		});
-};
-var _user$project$Main$boundaryToHTML = function (boundary) {
-	var borderThickness = 5;
+var _user$project$Main$viewBoundary = function (model) {
+	var boundary = model.boundary;
+	var correctedPosition_left = boundary.x - boundary.borderThickness;
+	var correctedPosition_right = boundary.y - boundary.borderThickness;
 	return A2(
 		_elm_lang$html$Html$div,
 		{
@@ -9287,7 +9362,7 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 						_0: 'border',
 						_1: A2(
 							_elm_lang$core$Basics_ops['++'],
-							_elm_lang$core$Basics$toString(borderThickness),
+							_elm_lang$core$Basics$toString(boundary.borderThickness),
 							'px solid red')
 					},
 					_1: {
@@ -9320,7 +9395,7 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 										_0: 'left',
 										_1: A2(
 											_elm_lang$core$Basics_ops['++'],
-											_elm_lang$core$Basics$toString(boundary.x - borderThickness),
+											_elm_lang$core$Basics$toString(correctedPosition_left),
 											'px')
 									},
 									_1: {
@@ -9330,7 +9405,7 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 											_0: 'top',
 											_1: A2(
 												_elm_lang$core$Basics_ops['++'],
-												_elm_lang$core$Basics$toString(boundary.y - borderThickness),
+												_elm_lang$core$Basics$toString(correctedPosition_right),
 												'px')
 										},
 										_1: {ctor: '[]'}
@@ -9346,14 +9421,12 @@ var _user$project$Main$boundaryToHTML = function (boundary) {
 };
 var _user$project$Main$update = F2(
 	function (msg, model) {
-		var _p5 = msg;
-		switch (_p5.ctor) {
-			case 'OnMilisecond':
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+		var _p10 = msg;
+		switch (_p10.ctor) {
 			case 'OnCircleMouseDown':
 				return {
 					ctor: '_Tuple2',
-					_0: A2(_user$project$Main$selectCircle, model, _p5._0),
+					_0: A2(_user$project$Main$selectCircle, _p10._0.id, model),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'OnMouseUp':
@@ -9365,16 +9438,16 @@ var _user$project$Main$update = F2(
 			case 'OnMouseMoved':
 				return {
 					ctor: '_Tuple2',
-					_0: A2(_user$project$Main$setSelectedCirclesToMousePosition, model, _p5._0),
+					_0: A2(_user$project$Main$setSelectedCircleToMousePosition, _p10._0, model),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			default:
 				return {
 					ctor: '_Tuple2',
-					_0: _user$project$Main$moveCircles(
+					_0: _user$project$Main$deflectCircles_ofBoundary(
 						_user$project$Main$deflectCircles_ofCircles(
-							_user$project$Main$deflectCircles_ofBoundary(
-								_user$project$Main$markCollidedCircles(model)))),
+							_user$project$Main$manage_otherColliderId(
+								_user$project$Main$moveCircles(model)))),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 		}
@@ -9382,39 +9455,260 @@ var _user$project$Main$update = F2(
 var _user$project$Main$frameUpdated = _elm_lang$core$Native_Platform.incomingPort('frameUpdated', _elm_lang$core$Json_Decode$string);
 var _user$project$Main$Model = F2(
 	function (a, b) {
-		return {circlesList: a, boundary: b};
+		return {circles: a, boundary: b};
 	});
 var _user$project$Main$Circle = F8(
 	function (a, b, c, d, e, f, g, h) {
-		return {id: a, x: b, y: c, radius: d, isSelected: e, otherColliderId: f, movementDirection: g, movementSpeed: h};
+		return {id: a, x: b, y: c, radius: d, isSelected: e, otherCollidersId: f, movementDirection: g, movementSpeed: h};
 	});
-var _user$project$Main$justToCircle = function (justCircle) {
-	var _p6 = justCircle;
-	if (_p6.ctor === 'Just') {
-		return _p6._0;
-	} else {
-		return A8(_user$project$Main$Circle, 0, 0, 0, 0, false, 0, 0, 0);
-	}
+var _user$project$Main$print = function (model) {
+	var printCircle = function (circle) {
+		var s = _elm_lang$html$Html_Attributes$style(
+			{
+				ctor: '::',
+				_0: {ctor: '_Tuple2', _0: 'margin', _1: '0px'},
+				_1: {ctor: '[]'}
+			});
+		return A2(
+			_elm_lang$html$Html$div,
+			{ctor: '[]'},
+			{
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$p,
+					{
+						ctor: '::',
+						_0: s,
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html$text(
+							_elm_lang$core$Basics$toString(circle.id)),
+						_1: {ctor: '[]'}
+					}),
+				_1: {
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$p,
+						{
+							ctor: '::',
+							_0: s,
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text(
+								_elm_lang$core$Basics$toString(circle.x)),
+							_1: {ctor: '[]'}
+						}),
+					_1: {
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$p,
+							{
+								ctor: '::',
+								_0: s,
+								_1: {ctor: '[]'}
+							},
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html$text(
+									_elm_lang$core$Basics$toString(circle.y)),
+								_1: {ctor: '[]'}
+							}),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$p,
+								{
+									ctor: '::',
+									_0: s,
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html$text(
+										_elm_lang$core$Basics$toString(circle.radius)),
+									_1: {ctor: '[]'}
+								}),
+							_1: {
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$p,
+									{
+										ctor: '::',
+										_0: s,
+										_1: {ctor: '[]'}
+									},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text(
+											_elm_lang$core$Basics$toString(circle.isSelected)),
+										_1: {ctor: '[]'}
+									}),
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$p,
+										{
+											ctor: '::',
+											_0: s,
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text(
+												_elm_lang$core$Basics$toString(circle.otherCollidersId)),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$p,
+											{
+												ctor: '::',
+												_0: s,
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text(
+													_elm_lang$core$Basics$toString(circle.movementDirection)),
+												_1: {ctor: '[]'}
+											}),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$p,
+												{
+													ctor: '::',
+													_0: s,
+													_1: {ctor: '[]'}
+												},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text(
+														_elm_lang$core$Basics$toString(circle.movementSpeed)),
+													_1: {ctor: '[]'}
+												}),
+											_1: {
+												ctor: '::',
+												_0: A2(
+													_elm_lang$html$Html$p,
+													{
+														ctor: '::',
+														_0: s,
+														_1: {ctor: '[]'}
+													},
+													{
+														ctor: '::',
+														_0: _elm_lang$html$Html$text(
+															_elm_lang$core$Basics$toString('---------------------------')),
+														_1: {ctor: '[]'}
+													}),
+												_1: {ctor: '[]'}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			});
+	};
+	var justCircleToCircle = function (justCircle) {
+		var _p11 = justCircle;
+		if (_p11.ctor === 'Just') {
+			return _p11._0;
+		} else {
+			return A8(
+				_user$project$Main$Circle,
+				0,
+				0,
+				0,
+				0,
+				false,
+				{ctor: '[]'},
+				0,
+				0);
+		}
+	};
+	var direction_fromP1_toP2 = F2(
+		function (p1, p2) {
+			var radiansToDegree = function (rad) {
+				return rad * 57.2958;
+			};
+			var vector = {x: p2.x - p1.x, y: p2.y - p1.y};
+			var vectorDegree = radiansToDegree(
+				A2(_elm_lang$core$Basics$atan2, vector.y, vector.x));
+			return vectorDegree;
+		});
+	return A2(
+		_elm_lang$html$Html$div,
+		{ctor: '[]'},
+		{ctor: '[]'});
 };
-var _user$project$Main$Boundary = F4(
-	function (a, b, c, d) {
-		return {x: a, y: b, height: c, wight: d};
+var _user$project$Main$Boundary = F5(
+	function (a, b, c, d, e) {
+		return {x: a, y: b, height: c, wight: d, borderThickness: e};
 	});
 var _user$project$Main$initModel = {
-	circlesList: {
+	circles: {
 		ctor: '::',
-		_0: A8(_user$project$Main$Circle, 1, 800, 200, 50, false, 0, 135, 20),
+		_0: A8(
+			_user$project$Main$Circle,
+			1,
+			1000,
+			200,
+			50,
+			false,
+			{ctor: '[]'},
+			270,
+			20),
 		_1: {
 			ctor: '::',
-			_0: A8(_user$project$Main$Circle, 2, 1000, 250, 50, false, 0, -135, 20),
+			_0: A8(
+				_user$project$Main$Circle,
+				2,
+				1000,
+				400,
+				50,
+				false,
+				{ctor: '[]'},
+				90,
+				20),
 			_1: {
 				ctor: '::',
-				_0: A8(_user$project$Main$Circle, 3, 1400, 400, 50, false, 0, 45, 20),
-				_1: {ctor: '[]'}
+				_0: A8(
+					_user$project$Main$Circle,
+					3,
+					1400,
+					400,
+					50,
+					false,
+					{ctor: '[]'},
+					45,
+					20),
+				_1: {
+					ctor: '::',
+					_0: A8(
+						_user$project$Main$Circle,
+						4,
+						1600,
+						600,
+						50,
+						false,
+						{ctor: '[]'},
+						45,
+						20),
+					_1: {ctor: '[]'}
+				}
 			}
 		}
 	},
-	boundary: A4(_user$project$Main$Boundary, 700, 100, 700, 1000)
+	boundary: A5(_user$project$Main$Boundary, 700, 100, 700, 1000, 5)
 };
 var _user$project$Main$OnFrameUpdate = function (a) {
 	return {ctor: 'OnFrameUpdate', _0: a};
@@ -9425,14 +9719,32 @@ var _user$project$Main$OnMouseMoved = function (a) {
 var _user$project$Main$OnMouseUp = function (a) {
 	return {ctor: 'OnMouseUp', _0: a};
 };
+var _user$project$Main$subscriptions = function (model) {
+	return _elm_lang$core$Platform_Sub$batch(
+		{
+			ctor: '::',
+			_0: _elm_lang$mouse$Mouse$moves(_user$project$Main$OnMouseMoved),
+			_1: {
+				ctor: '::',
+				_0: _elm_lang$mouse$Mouse$ups(_user$project$Main$OnMouseUp),
+				_1: {
+					ctor: '::',
+					_0: _user$project$Main$frameUpdated(_user$project$Main$OnFrameUpdate),
+					_1: {ctor: '[]'}
+				}
+			}
+		});
+};
 var _user$project$Main$OnCircleMouseDown = function (a) {
 	return {ctor: 'OnCircleMouseDown', _0: a};
 };
-var _user$project$Main$circlesToHTML = function (listOfCircles) {
+var _user$project$Main$viewCircles = function (model) {
 	var whiteOrRed = function (circle) {
-		return (_elm_lang$core$Native_Utils.cmp(circle.otherColliderId, 0) > 0) ? '#FF0000' : '#737373';
+		return (_elm_lang$core$Native_Utils.cmp(
+			_elm_lang$core$List$length(circle.otherCollidersId),
+			0) > 0) ? '#FF0000' : '#737373';
 	};
-	var circleToHTML = function (circle) {
+	var viewCircle = function (circle) {
 		return A2(
 			_elm_lang$html$Html$span,
 			{
@@ -9511,48 +9823,22 @@ var _user$project$Main$circlesToHTML = function (listOfCircles) {
 	return A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
-		A2(_elm_lang$core$List$map, circleToHTML, listOfCircles));
+		A2(_elm_lang$core$List$map, viewCircle, model.circles));
 };
 var _user$project$Main$view = function (model) {
-	var circle = _user$project$Main$justToCircle(
-		_elm_lang$core$List$head(model.circlesList));
 	return A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
 		{
 			ctor: '::',
-			_0: _user$project$Main$print(
-				_elm_lang$core$Basics$toString(model.circlesList)),
+			_0: _user$project$Main$print(model),
 			_1: {
 				ctor: '::',
-				_0: _user$project$Main$boundaryToHTML(model.boundary),
+				_0: _user$project$Main$viewBoundary(model),
 				_1: {
 					ctor: '::',
-					_0: _user$project$Main$circlesToHTML(model.circlesList),
+					_0: _user$project$Main$viewCircles(model),
 					_1: {ctor: '[]'}
-				}
-			}
-		});
-};
-var _user$project$Main$OnMilisecond = function (a) {
-	return {ctor: 'OnMilisecond', _0: a};
-};
-var _user$project$Main$subscriptions = function (model) {
-	return _elm_lang$core$Platform_Sub$batch(
-		{
-			ctor: '::',
-			_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$millisecond, _user$project$Main$OnMilisecond),
-			_1: {
-				ctor: '::',
-				_0: _elm_lang$mouse$Mouse$moves(_user$project$Main$OnMouseMoved),
-				_1: {
-					ctor: '::',
-					_0: _elm_lang$mouse$Mouse$ups(_user$project$Main$OnMouseUp),
-					_1: {
-						ctor: '::',
-						_0: _user$project$Main$frameUpdated(_user$project$Main$OnFrameUpdate),
-						_1: {ctor: '[]'}
-					}
 				}
 			}
 		});
