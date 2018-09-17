@@ -1,22 +1,19 @@
 {
-  "name": "AccountsTester",
-  "version": "0.0.1",
+  "name": "elm_collision",
+  "version": "1.0.0",
   "description": "",
-  "private": true,
+  "private": false,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "https://gitlab.wuintranet.net/SpeedPayNextGen/AccountsTester.git"
+    "url": "https://github.com/nikitach2/elm_collision.git"
   },
-  "author": "",
+  "author": "Nichita Ciuprin",
   "license": "ISC",
   "dependencies": {
-    "crypto-js": "3.1.9-1",
     "elm": "0.18.0",
-    "elm-format": "0.8.0",
-    "parcel-bundler": "1.9.7",
-    "zlibjs": "0.3.1"
+    "elm-format": "0.8.0"
   }
 }
