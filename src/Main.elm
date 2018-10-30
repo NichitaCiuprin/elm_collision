@@ -196,7 +196,7 @@ update msg model =
     let
         update2 msg2 model2 =
             Tuple.first <| update msg2 model2
-        --
+
         selectCircle id model2 =
             update2 (SelectCircle id) model2
 
