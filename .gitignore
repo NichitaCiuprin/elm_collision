@@ -7,3 +7,5 @@ elm.js
 node_modules
 .cache
 dist
+package.json
+package-lock.json
