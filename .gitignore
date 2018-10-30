@@ -1,11 +1,7 @@
-# elm-package generated files
 elm-stuff/
-# elm-repl generated files
 repl-temp-*
-
 elm.js
 node_modules
 .cache
 dist
-package.json
 package-lock.json
