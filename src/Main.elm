@@ -223,28 +223,6 @@ moveCircle circle =
         }
 
 
-movePoint : Direction -> Float -> Point -> Point
-movePoint dir float point =
-    { point
-        | x = point.x + (dir |> degrees |> cos) * float
-        , y = point.y - (dir |> degrees |> sin) * float
-    }
-
-
-selectCircle : CircleId -> Model -> Model
-selectCircle circleId model =
-    model.circles
-        |> List.map
-            (\c ->
-                if c.id == circleId then
-                    { c | isSelected = True }
-
-                else
-                    { c | isSelected = False }
-            )
-        |> (\newCircles -> { model | circles = newCircles })
-
-
 diselectCircles : Model -> Model
 diselectCircles model =
     model.circles
@@ -502,3 +480,26 @@ find f list =
 radiansToDegree : Float -> Float
 radiansToDegree rad =
     rad * 57.2958
+
+
+selectCircle : CircleId -> Model -> Model
+selectCircle circleId model =
+    model.circles
+        |> List.map
+            (\c ->
+                if c.id == circleId then
+                    { c | isSelected = True }
+
+                else
+                    { c | isSelected = False }
+            )
+        |> (\newCircles -> { model | circles = newCircles })
+
+
+
+movePoint : Direction -> Float -> Point -> Point
+movePoint dir float point =
+    { point
+        | x = point.x + (dir |> degrees |> cos) * float
+        , y = point.y - (dir |> degrees |> sin) * float
+    }
