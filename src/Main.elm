@@ -399,6 +399,33 @@ updateCollidedWith model =
         |> (\a -> { model | circles = a })
 
 
+
+--updateFirstWithOthers : List Circle -> List Circle
+--updateFirstWithOthers circles =
+--    let
+--        f1 : List Circle -> List Circle
+--        f1 circles2 =
+--            case circles2 of
+--                x :: xs ->
+--
+--
+--                _ ->
+--                    circles2
+--    in
+--    f1 { c1 = Nothing, cs = [] } circles
+--mapCompareFirst : (a -> a -> (a, a)) ->  List a -> List a
+--mapCompareFirst f list =
+--    case list of
+--        x :: xs ->
+--            let
+--                f1 : List a -> ,
+--            in
+--
+--
+--        _ ->
+--            list
+
+
 resetCollidedWith : Model -> Model
 resetCollidedWith model =
     model.circles
@@ -494,7 +521,6 @@ selectCircle circleId model =
                     { c | isSelected = False }
             )
         |> (\newCircles -> { model | circles = newCircles })
-
 
 
 movePoint : Direction -> Float -> Point -> Point
