@@ -74,15 +74,32 @@ main =
 
 init : Payload
 init =
-    { circles =
+    let
+        test1 model =
+            let
+                expect =
+                    [ "a", "b", "c" ]
+
+                result =
+                    mapCombination (\a b -> ( a, b )) [ "a", "b", "c" ]
+            in
+            if expect == result then
+                model
+
+            else
+                setError "test1" ("test failed." ++ "Expected" ++ toString [ "a", "b", "c" ] ++ "Result" ++ toString result) model
+    in
+    ({ circles =
         [ Circle 1 (Point 100 200) 50 False [] 270 20
         , Circle 2 (Point 200 300) 50 False [] 90 20
         , Circle 3 (Point 300 400) 50 False [] 45 20
         , Circle 4 (Point 400 500) 50 False [] 45 20
         ]
-    , boundary = Boundary 0 0 700 1000 5
-    , error = Nothing
-    }
+     , boundary = Boundary 0 0 700 1000 5
+     , error = Nothing
+     }
+        |> test1
+    )
         ! []
 
 
@@ -377,53 +394,24 @@ swapDirection c1 c2 =
     )
 
 
+
 updateCollidedWith : Model -> Model
 updateCollidedWith model =
-    List.foldl
-        (\c l ->
-            l
-                |> List.map
-                    (\a ->
-                        if a.id == c.id then
-                            a
-
-                        else if isCirclesCollided a c then
-                            { a | collidedWith = c.id :: a.collidedWith }
-
-                        else
-                            a
+    model.circles
+        |> mapCombination
+            (\a b ->
+                if isCirclesCollided a b then
+                    ( { a | collidedWith = b.id :: a.collidedWith }
+                    , { b | collidedWith = a.id :: b.collidedWith }
                     )
-        )
-        model.circles
-        model.circles
+
+                else
+                    ( a, b )
+            )
         |> (\a -> { model | circles = a })
 
 
 
---updateFirstWithOthers : List Circle -> List Circle
---updateFirstWithOthers circles =
---    let
---        f1 : List Circle -> List Circle
---        f1 circles2 =
---            case circles2 of
---                x :: xs ->
---
---
---                _ ->
---                    circles2
---    in
---    f1 { c1 = Nothing, cs = [] } circles
---mapCompareFirst : (a -> a -> (a, a)) ->  List a -> List a
---mapCompareFirst f list =
---    case list of
---        x :: xs ->
---            let
---                f1 : List a -> ,
---            in
---
---
---        _ ->
---            list
 
 
 resetCollidedWith : Model -> Model
@@ -457,9 +445,7 @@ distanceCircles c1 c2 =
     distance c1.point c2.point
 
 
-distance : Point -> Point -> Float
-distance p1 p2 =
-    ((p1.x - p2.x) ^ 2) + ((p1.y - p2.y) ^ 2) |> sqrt
+
 
 
 direction : Point -> Point -> Float
@@ -476,6 +462,11 @@ direction p1 p2 =
     -vectorDegree
 
 
+distance : Point -> Point -> Float
+distance p1 p2 =
+    ((p1.x - p2.x) ^ 2) + ((p1.y - p2.y) ^ 2) |> sqrt
+
+
 setError : String -> String -> Model -> Model
 setError location info model =
     ("Error in \"" ++ location ++ "\". " ++ info)
@@ -489,24 +480,6 @@ mousePositionToPoint mousePosition =
         (Basics.toFloat mousePosition.x)
         (Basics.toFloat mousePosition.y)
 
-
-find : (a -> Bool) -> List a -> Maybe a
-find f list =
-    case list of
-        x :: xs ->
-            if f x then
-                Just x
-
-            else
-                find f xs
-
-        _ ->
-            Nothing
-
-
-radiansToDegree : Float -> Float
-radiansToDegree rad =
-    rad * 57.2958
 
 
 selectCircle : CircleId -> Model -> Model
@@ -529,3 +502,29 @@ movePoint dir float point =
         | x = point.x + (dir |> degrees |> cos) * float
         , y = point.y - (dir |> degrees |> sin) * float
     }
+
+
+mapCombination : (a -> a -> ( a, a )) -> List a -> List a
+mapCombination f items =
+    case items of
+        [] ->
+            items
+
+        x :: xs ->
+            List.foldl
+                (\a b ->
+                    let
+                        tuple =
+                            f b.x a
+                    in
+                    { b | x = Tuple.first tuple, xs = List.append b.xs [ Tuple.second tuple ] }
+                )
+                { x = x, xs = [] }
+                xs
+                |> (\a -> a.x :: mapCombination f a.xs)
+
+
+
+radiansToDegree : Float -> Float
+radiansToDegree rad =
+    rad * 57.2958
