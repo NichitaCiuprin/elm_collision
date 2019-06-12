@@ -4,36 +4,26 @@ import Html exposing (canvas, div, p, span, text)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onMouseDown)
 import Mouse exposing (moves)
+import Time
 import Set
 
 
-port frameUpdated : (String -> msg) -> Sub msg
+type alias Direction = Float
 
+type alias Payload = ( Model, Cmd Msg )
+
+type alias CircleId = Int
 
 type alias Point =
     { x : Float
     , y : Float
     }
 
-
-type alias Direction =
-    Float
-
-
-type alias Payload =
-    ( Model, Cmd Msg )
-
-
-type alias CircleId =
-    Int
-
-
 type alias Model =
     { circles : List Circle
     , boundary : Boundary
     , error : Maybe String
     }
-
 
 type alias Circle =
     { id : Int
@@ -59,7 +49,8 @@ type Msg
     = OnCircleMouseDown Circle
     | OnMouseUp Mouse.Position
     | OnMouseMoved Mouse.Position
-    | OnFrameUpdate String
+    | OnEveryMilisecconds Time.Time
+
 
 
 main : Program Never Model Msg
@@ -75,25 +66,22 @@ main =
 init : Payload
 init =
     let
+        setError_test testName expectedResult actualResult model =
+            setError testName ("Test failed. " ++ "Expected result: " ++ toString expectedResult ++ ". Actual result: " ++ toString actualResult) model
+
         test1 model =
             let
-                expect =
-                    [ "a", "b", "c" ]
-
-                result =
-                    mapCombination (\a b -> ( a, b )) [ "a", "b", "c" ]
+                expectedResult = [ "a111", "b111", "c111", "d111" ]
+                actualResult = mapCombination (\a b -> ( a ++ "1", b ++ "1" )) [ "a", "b", "c", "d" ]
             in
-            if expect == result then
-                model
-
-            else
-                setError "test1" ("test failed." ++ "Expected" ++ toString [ "a", "b", "c" ] ++ "Result" ++ toString result) model
+            if expectedResult == actualResult then model
+            else setError_test "test1" expectedResult actualResult model
     in
     ({ circles =
-        [ Circle 1 (Point 100 200) 50 False [] 270 20
-        , Circle 2 (Point 200 300) 50 False [] 90 20
-        , Circle 3 (Point 300 400) 50 False [] 45 20
-        , Circle 4 (Point 400 500) 50 False [] 45 20
+        [ Circle 1 (Point 100 200) 50 False [] 240 circlesSpeed
+        , Circle 2 (Point 200 300) 50 False [] 90  circlesSpeed
+        , Circle 3 (Point 300 400) 50 False [] 45  circlesSpeed
+        , Circle 4 (Point 400 500) 50 False [] 45  circlesSpeed
         ]
      , boundary = Boundary 0 0 700 1000 5
      , error = Nothing
@@ -117,38 +105,10 @@ view : Model -> Html.Html Msg
 view model =
     let
         viewCircles =
-            let
-                viewCircle : Circle -> Html.Html Msg
-                viewCircle circle =
-                    let
-                        whiteOrRed =
-                            if List.length circle.collidedWith > 0 then
-                                "#FF0000"
-
-                            else
-                                "#737373"
-                    in
-                    span
-                        [ onMouseDown (OnCircleMouseDown circle)
-                        , style
-                            [ ( "left", toString (circle.point.x - circle.radius) ++ "px" )
-                            , ( "top", toString (circle.point.y - circle.radius) ++ "px" )
-                            , ( "height", toString (circle.radius * 2) ++ "px" )
-                            , ( "width", toString (circle.radius * 2) ++ "px" )
-                            , ( "background-color", whiteOrRed )
-                            , ( "position", "absolute" )
-                            , ( "border-radius", "50%" )
-                            ]
-                        ]
-                        []
-            in
             div [] (List.map viewCircle model.circles)
 
         viewBoundary =
-            let
-                boundary =
-                    model.boundary
-            in
+            let boundary = model.boundary in
             div
                 [ style
                     [ ( "position", "absolute" )
@@ -167,6 +127,22 @@ view model =
         , viewCircles
         ]
 
+viewCircle : Circle -> Html.Html Msg
+viewCircle circle =
+    span
+        [ onMouseDown (OnCircleMouseDown circle)
+        , style
+            [ ( "left", toString (circle.point.x - circle.radius) ++ "px" )
+            , ( "top", toString (circle.point.y - circle.radius) ++ "px" )
+            , ( "height", toString (circle.radius * 2) ++ "px" )
+            , ( "width", toString (circle.radius * 2) ++ "px" )
+            , ( "background-color", if List.length circle.collidedWith > 0 then "#FF0000" else "#737373" )
+            , ( "position", "absolute" )
+            , ( "border-radius", "50%" )
+            ]
+        ]
+        []
+
 
 updateError : Msg -> Model -> Payload
 updateError msg model =
@@ -180,10 +156,7 @@ updateError msg model =
 
 update : Msg -> Model -> Payload
 update msg model =
-    let
-        end =
-            \a -> a ! []
-    in
+    let end = \a -> a ! [] in
     case msg of
         OnCircleMouseDown circle ->
             model
@@ -197,10 +170,10 @@ update msg model =
 
         OnMouseMoved mousePosition ->
             model
-                |> setSelectedCircleToMousePosition mousePosition
+                |> moveCircleToMousePosition mousePosition
                 |> end
 
-        OnFrameUpdate _ ->
+        OnEveryMilisecconds _ ->
             model
                 |> moveCircles
                 |> updateCircles
@@ -214,37 +187,28 @@ subscriptions model =
     Sub.batch
         [ Mouse.moves OnMouseMoved
         , Mouse.ups OnMouseUp
-        , frameUpdated OnFrameUpdate
+        , Time.every 10 OnEveryMilisecconds
         ]
 
 
 moveCircles : Model -> Model
 moveCircles model =
     model.circles
-        |> List.map moveCircle
+        |> List.map updateCirclePosition
         |> (\newCircles -> { model | circles = newCircles })
 
 
-moveCircle : Circle -> Circle
-moveCircle circle =
-    if circle.isSelected then
-        circle
-
-    else
-        { circle
-            | point =
-                movePoint
-                    circle.movementDirection
-                    circle.movementSpeed
-                    circle.point
-        }
+updateCirclePosition : Circle -> Circle
+updateCirclePosition circle =
+    if circle.isSelected then circle
+    else { circle | point = movePoint circle.movementDirection circle.movementSpeed circle.point }
 
 
 diselectCircles : Model -> Model
 diselectCircles model =
     model.circles
         |> List.map (\c -> { c | isSelected = False })
-        |> (\newCircles -> { model | circles = newCircles })
+        |> (\c -> { model | circles = c })
 
 
 deflectCircles_ofBoundary : Model -> Model
@@ -404,13 +368,10 @@ updateCollidedWith model =
                     ( { a | collidedWith = b.id :: a.collidedWith }
                     , { b | collidedWith = a.id :: b.collidedWith }
                     )
-
                 else
                     ( a, b )
             )
         |> (\a -> { model | circles = a })
-
-
 
 
 
@@ -421,32 +382,23 @@ resetCollidedWith model =
         |> (\a -> { model | circles = a })
 
 
-setSelectedCircleToMousePosition : Mouse.Position -> Model -> Model
-setSelectedCircleToMousePosition mousePosition model =
+moveCircleToMousePosition : Mouse.Position -> Model -> Model
+moveCircleToMousePosition mousePosition model =
     model.circles
         |> List.map
-            (\a ->
-                if a.isSelected then
-                    { a | point = mousePositionToPoint mousePosition }
-
-                else
-                    a
-            )
+            (\a -> 
+                if a.isSelected then { a | point = mousePositionToPoint mousePosition }
+                else a)
         |> (\a -> { model | circles = a })
 
 
 isCirclesCollided : Circle -> Circle -> Bool
 isCirclesCollided c1 c2 =
-    (c1.radius + c2.radius) >= distanceCircles c1 c2
+    (c1.radius + c2.radius) >= circlesDistance c1 c2
 
 
-distanceCircles : Circle -> Circle -> Float
-distanceCircles c1 c2 =
-    distance c1.point c2.point
-
-
-
-
+circlesDistance : Circle -> Circle -> Float
+circlesDistance c1 c2 = distance c1.point c2.point
 
 direction : Point -> Point -> Float
 direction p1 p2 =
@@ -506,25 +458,53 @@ movePoint dir float point =
 
 mapCombination : (a -> a -> ( a, a )) -> List a -> List a
 mapCombination f items =
+    let
+        createDto head tail =
+            { head = head
+            , tail_old = tail
+            , tail_new = []
+            }
+
+        updateDto f2 dto =
+            case dto.tail_old of
+                [] -> dto
+                x::xs ->
+                    let tempTuple = f2 dto.head x in
+                    { dto 
+                        | head = Tuple.first tempTuple
+                        , tail_old = xs
+                        , tail_new = dto.tail_new ++ [Tuple.second tempTuple]
+                    }
+                    |> updateDto f2
+
+        dtoToList dto = dto.head :: dto.tail_new
+
+        nextCombination items2 = 
+            case items2 of
+                [] -> items2
+                x::xs -> x :: (mapCombination f xs)
+    in
     case items of
-        [] ->
-            items
+        [] -> items
+        x :: xs -> 
+            createDto x xs 
+            |> updateDto f 
+            |> dtoToList 
+            |> nextCombination
 
-        x :: xs ->
-            List.foldl
-                (\a b ->
-                    let
-                        tuple =
-                            f b.x a
-                    in
-                    { b | x = Tuple.first tuple, xs = List.append b.xs [ Tuple.second tuple ] }
-                )
-                { x = x, xs = [] }
-                xs
-                |> (\a -> a.x :: mapCombination f a.xs)
 
+
+f1 : (a -> { head : a, tail : List a } -> { head : a, tail : List a }) -> List a -> List a
+f1 f items =
+    case items of
+        [] -> items
+        x :: xs -> 
+            List.foldl f {head = x, tail = []} xs 
+            |> (\a -> a.head :: a.tail)
 
 
 radiansToDegree : Float -> Float
-radiansToDegree rad =
-    rad * 57.2958
+radiansToDegree rad = rad * 57.2958
+
+circlesSpeed : Float
+circlesSpeed = 3
