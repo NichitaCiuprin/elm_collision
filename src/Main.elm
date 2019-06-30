@@ -1,47 +1,18 @@
 port module Main exposing (main)
 
-import Html exposing (canvas, div, p, span, text)
-import Html.Attributes exposing (..)
-import Html.Events exposing (onMouseDown)
+import ErrorMsg
+import Html
+import Html.Attributes
+import Html.Events
 import Mouse exposing (moves)
-import Time
 import Set
+import Time
 
-
-type alias Direction = Float
-
-type alias Payload = ( Model, Cmd Msg )
-
-type alias CircleId = Int
-
-type alias Point =
-    { x : Float
-    , y : Float
-    }
 
 type alias Model =
-    { circles : List Circle
-    , boundary : Boundary
-    , error : Maybe String
-    }
-
-type alias Circle =
-    { id : Int
-    , point : Point
-    , radius : Float
-    , isSelected : Bool
-    , collidedWith : List CircleId --if list is empty then circle is not collided
-    , movementDirection : Float
-    , movementSpeed : Float
-    }
-
-
-type alias Boundary =
-    { x : Float
-    , y : Float
-    , height : Float
-    , wight : Float
-    , borderThickness : Float
+    { circles : Circles
+    , border : Border
+    , maybeErrorMsg : Maybe ErrorMsg.ErrorMsg
     }
 
 
@@ -49,16 +20,74 @@ type Msg
     = OnCircleMouseDown Circle
     | OnMouseUp Mouse.Position
     | OnMouseMoved Mouse.Position
-    | OnEveryMilisecconds Time.Time
+    | OnEveryTick Time.Time
 
+
+type alias Circles =
+    List Circle
+
+
+type alias Circle =
+    { id : Int --Must be unique
+    , isSelected : Bool
+    , point : Point
+    , radius : Float
+    , overlapersId : List Id --Contains ids of overlapers. If list is empty then circle is not overlaps with any circle
+    , movementDirection : Direction
+    , color : Color
+    }
+
+
+type alias Border =
+    { point : Point
+    , height : Float
+    , wight : Float
+    , thickness : Float
+    }
+
+
+type alias Point =
+    { x : Float, y : Float }
+
+
+type alias Payload =
+    ( Model, Cmd Msg )
+
+
+type alias Direction =
+    Float
+
+
+type alias Distance =
+    Float
+
+
+type alias Radians =
+    Float
+
+
+type alias Degree =
+    Float
+
+
+type alias Id =
+    Int
+
+
+type alias Speed =
+    Float
+
+
+type alias Color =
+    String
 
 
 main : Program Never Model Msg
 main =
     Html.program
         { init = init
-        , view = viewError
-        , update = updateError
+        , view = view
+        , update = update
         , subscriptions = subscriptions
         }
 
@@ -66,120 +95,16 @@ main =
 init : Payload
 init =
     let
-        setError_test testName expectedResult actualResult model =
-            setError testName ("Test failed. " ++ "Expected result: " ++ toString expectedResult ++ ". Actual result: " ++ toString actualResult) model
+        model =
+            { circles = initCircles
+            , border = initBorder
+            , maybeErrorMsg = Nothing
+            }
 
-        test1 model =
-            let
-                expectedResult = [ "a111", "b111", "c111", "d111" ]
-                actualResult = mapCombination (\a b -> ( a ++ "1", b ++ "1" )) [ "a", "b", "c", "d" ]
-            in
-            if expectedResult == actualResult then model
-            else setError_test "test1" expectedResult actualResult model
+        cmd =
+            []
     in
-    ({ circles =
-        [ Circle 1 (Point 100 200) 50 False [] 240 circlesSpeed
-        , Circle 2 (Point 200 300) 50 False [] 90  circlesSpeed
-        , Circle 3 (Point 300 400) 50 False [] 45  circlesSpeed
-        , Circle 4 (Point 400 500) 50 False [] 45  circlesSpeed
-        ]
-     , boundary = Boundary 0 0 700 1000 5
-     , error = Nothing
-     }
-        |> test1
-    )
-        ! []
-
-
-viewError : Model -> Html.Html Msg
-viewError model =
-    case model.error of
-        Nothing ->
-            view model
-
-        Just msg ->
-            Html.text msg
-
-
-view : Model -> Html.Html Msg
-view model =
-    let
-        viewCircles =
-            div [] (List.map viewCircle model.circles)
-
-        viewBoundary =
-            let boundary = model.boundary in
-            div
-                [ style
-                    [ ( "position", "absolute" )
-                    , ( "top", toString boundary.y ++ "px" )
-                    , ( "left", toString boundary.x ++ "px" )
-                    , ( "width", toString boundary.wight ++ "px" )
-                    , ( "height", toString boundary.height ++ "px" )
-                    , ( "border", toString boundary.borderThickness ++ "px solid red" )
-                    ]
-                ]
-                []
-    in
-    div
-        []
-        [ viewBoundary
-        , viewCircles
-        ]
-
-viewCircle : Circle -> Html.Html Msg
-viewCircle circle =
-    span
-        [ onMouseDown (OnCircleMouseDown circle)
-        , style
-            [ ( "left", toString (circle.point.x - circle.radius) ++ "px" )
-            , ( "top", toString (circle.point.y - circle.radius) ++ "px" )
-            , ( "height", toString (circle.radius * 2) ++ "px" )
-            , ( "width", toString (circle.radius * 2) ++ "px" )
-            , ( "background-color", if List.length circle.collidedWith > 0 then "#FF0000" else "#737373" )
-            , ( "position", "absolute" )
-            , ( "border-radius", "50%" )
-            ]
-        ]
-        []
-
-
-updateError : Msg -> Model -> Payload
-updateError msg model =
-    case model.error of
-        Just msg ->
-            model ! []
-
-        Nothing ->
-            update msg model
-
-
-update : Msg -> Model -> Payload
-update msg model =
-    let end = \a -> a ! [] in
-    case msg of
-        OnCircleMouseDown circle ->
-            model
-                |> selectCircle circle.id
-                |> end
-
-        OnMouseUp _ ->
-            model
-                |> diselectCircles
-                |> end
-
-        OnMouseMoved mousePosition ->
-            model
-                |> moveCircleToMousePosition mousePosition
-                |> end
-
-        OnEveryMilisecconds _ ->
-            model
-                |> moveCircles
-                |> updateCircles
-                |> deflectCircles_ofCircles
-                |> deflectCircles_ofBoundary
-                |> end
+    model ! cmd
 
 
 subscriptions : Model -> Sub Msg
@@ -187,221 +112,247 @@ subscriptions model =
     Sub.batch
         [ Mouse.moves OnMouseMoved
         , Mouse.ups OnMouseUp
-        , Time.every 10 OnEveryMilisecconds
+        , Time.every 10 OnEveryTick
         ]
 
 
-moveCircles : Model -> Model
-moveCircles model =
-    model.circles
-        |> List.map updateCirclePosition
-        |> (\newCircles -> { model | circles = newCircles })
+
+----------------------------------------------------------------------------------------------------
 
 
-updateCirclePosition : Circle -> Circle
-updateCirclePosition circle =
-    if circle.isSelected then circle
-    else { circle | point = movePoint circle.movementDirection circle.movementSpeed circle.point }
-
-
-diselectCircles : Model -> Model
-diselectCircles model =
-    model.circles
-        |> List.map (\c -> { c | isSelected = False })
-        |> (\c -> { model | circles = c })
-
-
-deflectCircles_ofBoundary : Model -> Model
-deflectCircles_ofBoundary model =
+update : Msg -> Model -> Payload
+update msg model =
     let
-        deflectCircle_ofBoundary : Boundary -> Circle -> Circle
-        deflectCircle_ofBoundary boundary circle =
-            let
-                isCircle_above_boundary =
-                    if (circle.point.y - circle.radius) < boundary.y then
-                        True
-
-                    else
-                        False
-
-                isCircle_leftOf_boundary =
-                    if (circle.point.x - circle.radius) < boundary.x then
-                        True
-
-                    else
-                        False
-
-                isCircle_rightOf_boundary =
-                    if (circle.point.x + circle.radius) > boundary.x + boundary.wight then
-                        True
-
-                    else
-                        False
-
-                isCircle_below_boundary =
-                    if (circle.point.y + circle.radius) > boundary.y + boundary.height then
-                        True
-
-                    else
-                        False
-
-                isCircleInTheCorner =
-                    (isCircle_above_boundary && isCircle_leftOf_boundary)
-                        || (isCircle_above_boundary && isCircle_rightOf_boundary)
-                        || (isCircle_below_boundary && isCircle_rightOf_boundary)
-                        || (isCircle_below_boundary && isCircle_leftOf_boundary)
-
-                normaliseAll degree =
-                    let
-                        normalise degree =
-                            Basics.toFloat <| Basics.round degree % 360
-
-                        skip360 degree =
-                            if degree == 360 then
-                                0
-
-                            else
-                                degree
-                    in
-                    degree |> normalise |> skip360
-
-                reflectDegree_backwards degree =
-                    degree |> (+) 180 |> normaliseAll
-
-                reflectDegree_horizontali degree =
-                    degree |> negate |> normaliseAll
-
-                reflectDegree_verticali degree =
-                    degree |> negate |> (+) 180 |> normaliseAll
-
-                reflectCircle_backwards =
-                    { circle | movementDirection = reflectDegree_backwards <| circle.movementDirection }
-
-                reflectCircle_horizontali =
-                    { circle | movementDirection = reflectDegree_horizontali <| circle.movementDirection }
-
-                reflectCircle_verticali =
-                    { circle | movementDirection = reflectDegree_verticali <| circle.movementDirection }
-            in
-            if isCircleInTheCorner then
-                reflectCircle_backwards
-
-            else if isCircle_leftOf_boundary || isCircle_rightOf_boundary then
-                reflectCircle_verticali
-
-            else if isCircle_above_boundary || isCircle_below_boundary then
-                reflectCircle_horizontali
-
-            else
-                circle
-
-        newCircles =
-            List.map (deflectCircle_ofBoundary model.boundary) model.circles
+        end =
+            \a -> a ! []
     in
-    { model | circles = newCircles }
+    case msg of
+        OnCircleMouseDown circle ->
+            model
+                --|> selectCircle circle
+                |> end
+
+        OnMouseUp _ ->
+            model
+                --|> diselectCircles
+                |> end
+
+        OnMouseMoved mousePosition ->
+            model
+                --|> moveCircleToMousePosition mousePosition
+                |> end
+
+        OnEveryTick _ ->
+            model
+                --|> deflectCirclesOf_circles
+                |> m_findCirclesOverlapers
+                |> m_changeCirclesColor
+                |> m_deflectCirclesOf_border
+                |> m_moveCircles
+                |> end
+
+
+m_moveCircles : Model -> Model
+m_moveCircles model =
+    { model | circles = moveCircles model.circles }
+
+
+m_changeCirclesColor : Model -> Model
+m_changeCirclesColor model =
+    { model | circles = changeCirclesColor model.circles }
+
+
+m_deflectCirclesOf_border : Model -> Model
+m_deflectCirclesOf_border model =
+    { model | circles = deflectCirclesOf_border model.border model.circles }
+
+
+m_findCirclesOverlapers : Model -> Model
+m_findCirclesOverlapers model =
+    { model | circles = findCirclesOverlapers model.circles }
 
 
 
---TODO handle multiple collisions in same time
+--m_selectCircle : Model -> Model
+--m_selectCircle model =
+--    { model | }
+----------------------------------------------------------------------------------------------------
 
 
-deflectCircles_ofCircles : Model -> Model
-deflectCircles_ofCircles model =
-    let
-        deflectCircle_ofCircle : List Circle -> Circle -> Circle
-        deflectCircle_ofCircle list_circles circle =
-            case list_circles of
-                [] ->
-                    circle
+view : Model -> Html.Html Msg
+view model =
+    case model.maybeErrorMsg of
+        Just errorMsg ->
+            ErrorMsg.view errorMsg
 
-                y :: ys ->
-                    let
-                        checkNextCircle =
-                            deflectCircle_ofCircle ys circle
-
-                        sameCircle =
-                            y.id == circle.id
-
-                        otherColliderFound =
-                            List.member y.id circle.collidedWith
-
-                        swapMovementDirections =
-                            { circle | movementDirection = 180 + direction circle.point y.point }
-                    in
-                    if sameCircle then
-                        checkNextCircle
-
-                    else if otherColliderFound then
-                        swapMovementDirections
-
-                    else
-                        checkNextCircle
-
-        newCircles =
-            List.map (deflectCircle_ofCircle model.circles) model.circles
-    in
-    newCircles
-        |> (\a -> { model | circles = a })
+        Nothing ->
+            groupHtml
+                [ viewBorder model.border
+                , viewCircles model.circles
+                ]
 
 
-updateCircles : Model -> Model
-updateCircles model =
-    model
-        |> resetCollidedWith
-        |> updateCollidedWith
+viewCircles : Circles -> Html.Html Msg
+viewCircles circles =
+    groupHtml (List.map viewCircle circles)
 
 
-swapDirection : Circle -> Circle -> ( Circle, Circle )
-swapDirection c1 c2 =
+viewCircle : Circle -> Html.Html Msg
+viewCircle circle =
+    Html.span
+        [ Html.Events.onMouseDown (OnCircleMouseDown circle)
+        , Html.Attributes.style
+            [ ( "left", toString (circle.point.x - circle.radius) ++ "px" )
+            , ( "top", toString (circle.point.y - circle.radius) ++ "px" )
+            , ( "height", toString (circle.radius * 2) ++ "px" )
+            , ( "width", toString (circle.radius * 2) ++ "px" )
+            , ( "background-color", circle.color )
+            , ( "position", "absolute" )
+            , ( "border-radius", "50%" )
+            ]
+        ]
+        []
+
+
+viewBorder : Border -> Html.Html a
+viewBorder border =
+    Html.div
+        [ Html.Attributes.style
+            [ ( "position", "absolute" )
+            , ( "top", toString border.point.y ++ "px" )
+            , ( "left", toString border.point.x ++ "px" )
+            , ( "width", toString border.wight ++ "px" )
+            , ( "height", toString border.height ++ "px" )
+            , ( "border", toString border.thickness ++ "px solid red" )
+            ]
+        ]
+        []
+
+
+
+----------------------------------------------------------------------------------------------------
+
+
+initBorder : Border
+initBorder =
+    Border initPoint 700 1000 5
+
+
+isCirclesOverlap : Circle -> Circle -> Bool
+isCirclesOverlap c1 c2 =
+    (c1.radius + c2.radius) >= distanceBetweenCircles c1 c2
+
+
+distanceBetweenCircles : Circle -> Circle -> Float
+distanceBetweenCircles c1 c2 =
+    distanceBetwinPoints c1.point c2.point
+
+
+swapCirlcesDirection : Circle -> Circle -> ( Circle, Circle )
+swapCirlcesDirection c1 c2 =
     ( { c1 | movementDirection = c2.movementDirection }
     , { c2 | movementDirection = c1.movementDirection }
     )
 
 
-
-updateCollidedWith : Model -> Model
-updateCollidedWith model =
-    model.circles
-        |> mapCombination
-            (\a b ->
-                if isCirclesCollided a b then
-                    ( { a | collidedWith = b.id :: a.collidedWith }
-                    , { b | collidedWith = a.id :: b.collidedWith }
-                    )
-                else
-                    ( a, b )
-            )
-        |> (\a -> { model | circles = a })
+deflectCircles_verticali : Circle -> Circle
+deflectCircles_verticali circle =
+    { circle | movementDirection = reflectDegree_vertiacali circle.movementDirection }
 
 
-
-resetCollidedWith : Model -> Model
-resetCollidedWith model =
-    model.circles
-        |> List.map (\a -> { a | collidedWith = [] })
-        |> (\a -> { model | circles = a })
+deflectCircles_horizontali : Circle -> Circle
+deflectCircles_horizontali circle =
+    { circle | movementDirection = reflectDegree_horizontali circle.movementDirection }
 
 
-moveCircleToMousePosition : Mouse.Position -> Model -> Model
-moveCircleToMousePosition mousePosition model =
-    model.circles
-        |> List.map
-            (\a -> 
-                if a.isSelected then { a | point = mousePositionToPoint mousePosition }
-                else a)
-        |> (\a -> { model | circles = a })
+circle_y_lowest : Circle -> Float
+circle_y_lowest circle =
+    circle.point.y - circle.radius
 
 
-isCirclesCollided : Circle -> Circle -> Bool
-isCirclesCollided c1 c2 =
-    (c1.radius + c2.radius) >= circlesDistance c1 c2
+circle_y_bigest : Circle -> Float
+circle_y_bigest circle =
+    circle.point.y + circle.radius
 
 
-circlesDistance : Circle -> Circle -> Float
-circlesDistance c1 c2 = distance c1.point c2.point
+circle_x_lowest : Circle -> Float
+circle_x_lowest circle =
+    circle.point.x - circle.radius
 
-direction : Point -> Point -> Float
-direction p1 p2 =
+
+circle_x_bigest : Circle -> Float
+circle_x_bigest circle =
+    circle.point.x + circle.radius
+
+
+moveCircle : Circle -> Circle
+moveCircle circle =
+    { circle | point = movePoint circle.movementDirection circleMovementSpeed circle.point }
+
+
+diselectCircles : Circles -> Circles
+diselectCircles circles =
+    List.map diselectCircle circles
+
+
+diselectCircle : Circle -> Circle
+diselectCircle circle =
+    { circle | isSelected = False }
+
+
+selectCircle : Circle -> Circle
+selectCircle circle =
+    { circle | isSelected = True }
+
+
+
+--swapCircleById : Circle -> Circles -> Cirlces
+--swapCircleById circle circles =
+
+
+changeCirclesColor : Circles -> Circles
+changeCirclesColor circles =
+    List.map changeCircleColor circles
+
+
+changeCircleColor : Circle -> Circle
+changeCircleColor circle =
+    let
+        newColor =
+            if isCircleOverlaps circle then
+                red
+
+            else
+                grey
+    in
+    { circle | color = newColor }
+
+
+isCircleOverlaps : Circle -> Bool
+isCircleOverlaps circle =
+    List.length circle.overlapersId > 0
+
+
+initPoint : Point
+initPoint =
+    Point 0 0
+
+
+movePoint : Direction -> Distance -> Point -> Point
+movePoint direction distance point =
+    { point
+        | x = point.x + (direction |> degrees |> cos) * distance
+        , y = point.y - (direction |> degrees |> sin) * distance
+    }
+
+
+distanceBetwinPoints : Point -> Point -> Distance
+distanceBetwinPoints p1 p2 =
+    ((p1.x - p2.x) ^ 2) + ((p1.y - p2.y) ^ 2) |> sqrt
+
+
+pointsToDirection : Point -> Point -> Direction
+pointsToDirection p1 p2 =
     let
         vector =
             { x = p2.x - p1.x
@@ -414,97 +365,227 @@ direction p1 p2 =
     -vectorDegree
 
 
-distance : Point -> Point -> Float
-distance p1 p2 =
-    ((p1.x - p2.x) ^ 2) + ((p1.y - p2.y) ^ 2) |> sqrt
+pointToMousePosition : Mouse.Position -> Point
+pointToMousePosition mousePosition =
+    { x = Basics.toFloat mousePosition.x
+    , y = Basics.toFloat mousePosition.y
+    }
 
 
-setError : String -> String -> Model -> Model
-setError location info model =
-    ("Error in \"" ++ location ++ "\". " ++ info)
-        |> Just
-        |> (\a -> { model | error = a })
-
-
-mousePositionToPoint : Mouse.Position -> Point
-mousePositionToPoint mousePosition =
-    Point
-        (Basics.toFloat mousePosition.x)
-        (Basics.toFloat mousePosition.y)
-
-
-
-selectCircle : CircleId -> Model -> Model
-selectCircle circleId model =
-    model.circles
-        |> List.map
-            (\c ->
-                if c.id == circleId then
-                    { c | isSelected = True }
+findCirclesOverlapers : Circles -> Circles
+findCirclesOverlapers circles =
+    circles
+        |> List.map (\a -> { a | overlapersId = [] })
+        |> mapCombination
+            (\a b ->
+                if isCirclesOverlap a b then
+                    ( { a | overlapersId = b.id :: a.overlapersId }
+                    , { b | overlapersId = a.id :: b.overlapersId }
+                    )
 
                 else
-                    { c | isSelected = False }
+                    ( a, b )
             )
-        |> (\newCircles -> { model | circles = newCircles })
 
 
-movePoint : Direction -> Float -> Point -> Point
-movePoint dir float point =
-    { point
-        | x = point.x + (dir |> degrees |> cos) * float
-        , y = point.y - (dir |> degrees |> sin) * float
-    }
+moveCircles : Circles -> Circles
+moveCircles circles =
+    List.map moveCircle circles
+
+
+initCircles : Circles
+initCircles =
+    [ Circle 1 False (Point 100 100) 50 [] 20 grey
+    , Circle 2 False (Point 200 200) 50 [] 0 grey
+    , Circle 3 False (Point 300 300) 50 [] 0 grey
+    , Circle 4 False (Point 400 400) 50 [] 0 grey
+    ]
+
+
+deflectCirclesOf_border : Border -> Circles -> Circles
+deflectCirclesOf_border border circles =
+    List.map (deflectCircleOf_border border) circles
+
+
+deflectCircleOf_border : Border -> Circle -> Circle
+deflectCircleOf_border border circle =
+    if isCircle_aboveBorder border circle || isCircle_belowBorder border circle then
+        deflectCircles_horizontali circle
+
+    else if isCircle_leftOfBorder border circle || isCircle_rightOfBorder border circle then
+        deflectCircles_verticali circle
+
+    else
+        circle
+
+
+isCircle_aboveBorder : Border -> Circle -> Bool
+isCircle_aboveBorder border circle =
+    if circle_y_lowest circle < border.point.y then
+        True
+
+    else
+        False
+
+
+isCircle_leftOfBorder : Border -> Circle -> Bool
+isCircle_leftOfBorder border circle =
+    if circle_x_lowest circle < border.point.x then
+        True
+
+    else
+        False
+
+
+isCircle_belowBorder : Border -> Circle -> Bool
+isCircle_belowBorder border circle =
+    if circle_y_bigest circle > border.height then
+        True
+
+    else
+        False
+
+
+isCircle_rightOfBorder : Border -> Circle -> Bool
+isCircle_rightOfBorder border circle =
+    if circle_x_bigest circle > border.wight then
+        True
+
+    else
+        False
 
 
 mapCombination : (a -> a -> ( a, a )) -> List a -> List a
 mapCombination f items =
-    let
-        createDto head tail =
-            { head = head
-            , tail_old = tail
-            , tail_new = []
+    case items of
+        [] ->
+            items
+
+        x :: xs ->
+            createMapCombinationDto x xs
+                |> updateMapCombinationDto f
+                |> mapCombinationDtoToList
+                |> nextCombination f
+
+
+createMapCombinationDto : a -> b -> { head : a, tail_new : List c, tail_old : b }
+createMapCombinationDto head tail =
+    { head = head
+    , tail_old = tail
+    , tail_new = []
+    }
+
+
+mapCombinationDtoToList : { b | head : a, tail_new : List a } -> List a
+mapCombinationDtoToList dto =
+    dto.head :: dto.tail_new
+
+
+nextCombination : (a -> a -> ( a, a )) -> List a -> List a
+nextCombination f items =
+    case items of
+        [] ->
+            items
+
+        x :: xs ->
+            x :: mapCombination f xs
+
+
+updateMapCombinationDto :
+    (a -> b -> ( a, c ))
+    -> { d | head : a, tail_new : List c, tail_old : List b }
+    -> { d | head : a, tail_new : List c, tail_old : List b }
+updateMapCombinationDto f2 dto =
+    case dto.tail_old of
+        [] ->
+            dto
+
+        x :: xs ->
+            let
+                tempTuple =
+                    f2 dto.head x
+            in
+            { dto
+                | head = Tuple.first tempTuple
+                , tail_old = xs
+                , tail_new = dto.tail_new ++ [ Tuple.second tempTuple ]
             }
+                |> updateMapCombinationDto f2
 
-        updateDto f2 dto =
-            case dto.tail_old of
-                [] -> dto
-                x::xs ->
-                    let tempTuple = f2 dto.head x in
-                    { dto 
-                        | head = Tuple.first tempTuple
-                        , tail_old = xs
-                        , tail_new = dto.tail_new ++ [Tuple.second tempTuple]
-                    }
-                    |> updateDto f2
 
-        dtoToList dto = dto.head :: dto.tail_new
+findAvailableId : Set.Set Id -> Id
+findAvailableId idsInUse =
+    let
+        f1 int idsInUse =
+            if Set.member int idsInUse then
+                f1 (int + 1) idsInUse
 
-        nextCombination items2 = 
-            case items2 of
-                [] -> items2
-                x::xs -> x :: (mapCombination f xs)
+            else
+                int
     in
-    case items of
-        [] -> items
-        x :: xs -> 
-            createDto x xs 
-            |> updateDto f 
-            |> dtoToList 
-            |> nextCombination
+    f1 0 idsInUse
+
+
+normaliseDegree : Degree -> Degree
+normaliseDegree degree =
+    degree
+        |> Basics.round
+        |> (%) 360
+        |> Basics.toFloat
+
+
+reflectDegree : Degree -> Degree -> Degree
+reflectDegree measure degree =
+    -degree + (measure * 2)
+
+
+reflectDegree_backwards : Degree -> Degree
+reflectDegree_backwards degree =
+    reflectDegree degree degree
+
+
+reflectDegree_vertiacali : Degree -> Degree
+reflectDegree_vertiacali degree =
+    reflectDegree 90 degree
+
+
+reflectDegree_horizontali : Degree -> Degree
+reflectDegree_horizontali degree =
+    reflectDegree 0 degree
+
+
+radiansToDegree : Radians -> Float
+radiansToDegree rad =
+    rad * 57.2958
+
+
+groupHtml : List (Html.Html a) -> Html.Html a
+groupHtml items =
+    Html.div [] items
+
+
+circleMovementSpeed : Speed
+circleMovementSpeed =
+    10
+
+
+red : Color
+red =
+    "#FF0000"
+
+
+grey : Color
+grey =
+    "#737373"
 
 
 
-f1 : (a -> { head : a, tail : List a } -> { head : a, tail : List a }) -> List a -> List a
-f1 f items =
-    case items of
-        [] -> items
-        x :: xs -> 
-            List.foldl f {head = x, tail = []} xs 
-            |> (\a -> a.head :: a.tail)
-
-
-radiansToDegree : Float -> Float
-radiansToDegree rad = rad * 57.2958
-
-circlesSpeed : Float
-circlesSpeed = 3
+{-
+   mapCombination_test1 : Model -> Model
+   mapCombination_test1 model =
+       let
+           expectedResult = [ "a111", "b111", "c111", "d111" ]
+           actualResult = mapCombination (\a b -> ( a ++ "1", b ++ "1" )) [ "a", "b", "c", "d" ]
+       in
+       if expectedResult == actualResult then model else setError_test "test1" expectedResult actualResult model
+-}
