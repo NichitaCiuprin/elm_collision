@@ -129,7 +129,7 @@ update msg model =
     case msg of
         OnCircleMouseDown circle ->
             model
-                --|> selectCircle circle
+                |> m_selectCircle circle
                 |> end
 
         OnMouseUp _ ->
@@ -173,9 +173,15 @@ m_findCirclesOverlapers model =
 
 
 
---m_selectCircle : Model -> Model
---m_selectCircle model =
---    { model | }
+--TODO
+
+
+m_selectCircle : Circle -> Model -> Model
+m_selectCircle circle model =
+    model
+
+
+
 ----------------------------------------------------------------------------------------------------
 
 
@@ -303,11 +309,6 @@ diselectCircle circle =
 selectCircle : Circle -> Circle
 selectCircle circle =
     { circle | isSelected = True }
-
-
-
---swapCircleById : Circle -> Circles -> Cirlces
---swapCircleById circle circles =
 
 
 changeCirclesColor : Circles -> Circles
@@ -476,21 +477,6 @@ createMapCombinationDto head tail =
     }
 
 
-mapCombinationDtoToList : { b | head : a, tail_new : List a } -> List a
-mapCombinationDtoToList dto =
-    dto.head :: dto.tail_new
-
-
-nextCombination : (a -> a -> ( a, a )) -> List a -> List a
-nextCombination f items =
-    case items of
-        [] ->
-            items
-
-        x :: xs ->
-            x :: mapCombination f xs
-
-
 updateMapCombinationDto :
     (a -> b -> ( a, c ))
     -> { d | head : a, tail_new : List c, tail_old : List b }
@@ -511,6 +497,21 @@ updateMapCombinationDto f2 dto =
                 , tail_new = dto.tail_new ++ [ Tuple.second tempTuple ]
             }
                 |> updateMapCombinationDto f2
+
+
+mapCombinationDtoToList : { b | head : a, tail_new : List a } -> List a
+mapCombinationDtoToList dto =
+    dto.head :: dto.tail_new
+
+
+nextCombination : (a -> a -> ( a, a )) -> List a -> List a
+nextCombination f items =
+    case items of
+        [] ->
+            items
+
+        x :: xs ->
+            x :: mapCombination f xs
 
 
 findAvailableId : Set.Set Id -> Id
@@ -577,6 +578,11 @@ red =
 grey : Color
 grey =
     "#737373"
+
+
+end : Model -> Payload
+end model =
+    model ! []
 
 
 
