@@ -100,6 +100,7 @@ init =
             , border = initBorder
             , maybeErrorMsg = Nothing
             }
+                |> mapCombination_test1
 
         cmd =
             []
@@ -463,55 +464,37 @@ mapCombination f items =
             items
 
         x :: xs ->
-            createMapCombinationDto x xs
-                |> updateMapCombinationDto f
-                |> mapCombinationDtoToList
-                |> nextCombination f
+            let
+                tuple =
+                    mapCombination_2 x xs [] f
+
+                x_new =
+                    Tuple.first tuple
+
+                xs_new =
+                    Tuple.second tuple
+            in
+            x_new :: mapCombination f xs_new
 
 
-createMapCombinationDto : a -> b -> { head : a, tail_new : List c, tail_old : b }
-createMapCombinationDto head tail =
-    { head = head
-    , tail_old = tail
-    , tail_new = []
-    }
-
-
-updateMapCombinationDto :
-    (a -> b -> ( a, c ))
-    -> { d | head : a, tail_new : List c, tail_old : List b }
-    -> { d | head : a, tail_new : List c, tail_old : List b }
-updateMapCombinationDto f2 dto =
-    case dto.tail_old of
+mapCombination_2 : a -> List a -> List a -> (a -> a -> ( a, a )) -> ( a, List a )
+mapCombination_2 head tail end f =
+    case tail of
         [] ->
-            dto
+            ( head, end )
 
         x :: xs ->
             let
-                tempTuple =
-                    f2 dto.head x
+                tuple =
+                    f head x
+
+                head_new =
+                    Tuple.first tuple
+
+                x_new =
+                    Tuple.second tuple
             in
-            { dto
-                | head = Tuple.first tempTuple
-                , tail_old = xs
-                , tail_new = dto.tail_new ++ [ Tuple.second tempTuple ]
-            }
-                |> updateMapCombinationDto f2
-
-
-mapCombinationDtoToList : { b | head : a, tail_new : List a } -> List a
-mapCombinationDtoToList dto =
-    dto.head :: dto.tail_new
-
-
-nextCombination : (a -> a -> ( a, a )) -> List a -> List a
-nextCombination f items =
-    case items of
-        [] ->
-            items
-
-        x :: xs ->
-            x :: mapCombination f xs
+            mapCombination_2 head_new xs (end ++ [ x_new ]) f
 
 
 findAvailableId : Set.Set Id -> Id
@@ -580,18 +563,21 @@ grey =
     "#737373"
 
 
-end : Model -> Payload
-end model =
-    model ! []
+
+----------------------------------------------------------------------------------------------------
 
 
+mapCombination_test1 : Model -> Model
+mapCombination_test1 model =
+    let
+        expectedResult =
+            [ "a111", "b111", "c111", "d111" ]
 
-{-
-   mapCombination_test1 : Model -> Model
-   mapCombination_test1 model =
-       let
-           expectedResult = [ "a111", "b111", "c111", "d111" ]
-           actualResult = mapCombination (\a b -> ( a ++ "1", b ++ "1" )) [ "a", "b", "c", "d" ]
-       in
-       if expectedResult == actualResult then model else setError_test "test1" expectedResult actualResult model
--}
+        actualResult =
+            mapCombination (\a b -> ( a ++ "1", b ++ "1" )) [ "a", "b", "c", "d" ]
+    in
+    if expectedResult == actualResult then
+        model
+
+    else
+        { model | maybeErrorMsg = Just (toString actualResult) }
